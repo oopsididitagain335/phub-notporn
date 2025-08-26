@@ -10,15 +10,19 @@
   <div class="container">
     <h1>🔗 Link Your Discord Account</h1>
     <p>Hello, <strong><%= username %></strong>!</p>
-    <p>To access the full site, link your account via Discord.</p>
+    <p>To continue, join our Discord and link your account.</p>
 
     <ol>
-      <li>Join our server: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
-      <li>Type in any channel: <code>/link code:YOUR_CODE</code></li>
-      <li>Wait for the ✅ confirmation</li>
+      <li>Join: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
+      <li>Type in any channel:</li>
     </ol>
 
-    <p>Once linked, refresh this page to continue.</p>
+    <!-- ✅ Show the real code -->
+    <div class="code-display">
+      <code>/link code:<%= linkCode %></code>
+    </div>
+
+    <p>After linking, refresh this page to access your account.</p>
     <button onclick="location.reload()">Check Status</button>
   </div>
 </body>
