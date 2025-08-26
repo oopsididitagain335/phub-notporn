@@ -1,3 +1,5 @@
+// server.js
+
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -27,11 +29,11 @@ app.use(
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
-    cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 }
+    cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 } // 24 hours
   })
 );
 
-// Auth Helper
+// Auth Middleware
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.redirect('/login');
   next();
@@ -52,30 +54,23 @@ app.get('/', (req, res) => {
 // Signup POST
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
-
-  // Validate inputs
   if (!username || !email || !password) {
     return res.render('signup', { error: 'All fields required' });
   }
 
-  // Check if user already exists
   const existing = await User.findOne({ $or: [{ username }, { email }] });
   if (existing) {
     return res.render('signup', { error: 'Username or email already taken' });
   }
 
-  // Hash password
   const passwordHash = await bcrypt.hash(password, 12);
   const linkCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-  // Create user
   const user = await User.create({ username, email, passwordHash, linkCode });
 
-  // Set session
   req.session.userId = user._id;
   req.session.user = user;
 
-  // Redirect to dashboard
   res.redirect('/dashboard');
 });
 
@@ -103,13 +98,22 @@ app.post('/login', async (req, res) => {
 
   req.session.userId = user._id;
   req.session.user = user;
+
   res.redirect('/dashboard');
 });
 
-// Dashboard
+// Dashboard – Show link code
 app.get('/dashboard', requireAuth, async (req, res) => {
   const user = await User.findById(req.session.userId);
   res.render('dashboard', { user });
+});
+
+// Optional: Regenerate link code
+app.post('/api/generate-link-code', requireAuth, async (req, res) => {
+  const user = await User.findById(req.session.userId);
+  user.linkCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+  await user.save();
+  res.json({ linkCode: user.linkCode });
 });
 
 // Logout
@@ -118,7 +122,7 @@ app.post('/logout', requireAuth, (req, res) => {
   res.redirect('/');
 });
 
-// Start Bot
+// Start Discord Bot
 startBot();
 
 // Start Server
