@@ -1,54 +1,49 @@
 // bot.js
-const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-require('dotenv').config();
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildBans] });
-client.commands = new Collection();
-
-const commandsPath = path.join(__dirname, 'commands');
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
-
-for (const file of commandFiles) {
-  const command = require(path.join(commandsPath, file));
-  if ('data' in command && 'execute' in command) {
-    client.commands.set(command.data.name, command);
-  }
-}
-
-client.once('ready', async () => {
-  console.log(`🤖 ${client.user.tag} ready!`);
-  const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
+client.on('guildBanAdd', async (ban) => {
   try {
-    await rest.put(Routes.applicationCommands(process.env.DISCORD_CLIENT_ID), {
-      body: [...client.commands.values()].map(cmd => cmd.data.toJSON())
-    });
-    console.log('✅ Commands registered globally');
-  } catch (err) {
-    console.error('❌ Command registration failed:', err);
-  }
-});
+    // ✅ Get user and guild from ban object
+    const user = ban.user;
+    const guild = ban.guild;
 
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-  const command = client.commands.get(interaction.commandName);
-  if (command) await command.execute(interaction);
-});
+    if (!user || !guild) {
+      return console.warn('[Ban] Missing user or guild data');
+    }
 
-// Ban handler (optional)
-client.on('guildBanAdd', async (guild, user) => {
-  const User = require('./models/User');
-  const dbUser = await User.findOne({ discordId: user.id });
-  if (dbUser) {
+    console.log(`🚫 ${user.tag} was banned from ${guild.name}`);
+
+    const User = require('./models/User');
+    const dbUser = await User.findOne({ discordId: user.id });
+
+    if (!dbUser) {
+      console.log(`ℹ️ No PulseHub account linked for ${user.tag}`);
+      return;
+    }
+
+    // Fetch reason from audit log
+    let reason = 'No reason provided';
+    try {
+      const audit = await guild.fetchAuditLogs({
+        limit: 1,
+        type: 'MEMBER_BAN_ADD'
+      });
+      const log = audit.entries.first();
+      if (log && log.target.id === user.id) {
+        reason = log.reason || reason;
+      }
+    } catch (auditErr) {
+      console.warn('[Ban] Could not fetch audit log:', auditErr.message);
+    }
+
+    // ✅ Mark user as banned
     dbUser.isBanned = true;
-    dbUser.banReason = 'Banned from community server';
+    dbUser.banReason = reason;
     await dbUser.save();
+
+    console.log(`✅ ${dbUser.username} marked as banned: ${reason}`);
+
+  } catch (err) {
+    console.error('[guildBanAdd] Unexpected error:', err);
+    // Never crash the bot
   }
 });
-
-function startBot() {
-  client.login(process.env.BOT_TOKEN);
-}
-
-module.exports = { startBot };
