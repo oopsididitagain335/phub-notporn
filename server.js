@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -6,15 +5,13 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
-const { startBot, client } = require('./bot');
+const { startBot } = require('./bot');
 const User = require('./models/User');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --------------------
 // Middleware
-// --------------------
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
@@ -34,40 +31,35 @@ app.use(
   })
 );
 
-// --------------------
 // Helpers
-// --------------------
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.redirect('/login');
   next();
 }
 
-// --------------------
 // Mongo
-// --------------------
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log('✅ MongoDB connected'))
   .catch(err => console.error('MongoDB error:', err));
 
-// --------------------
 // Routes
-// --------------------
 
 // Signup page
 app.get('/', (req, res) => res.render('signup'));
 
 // Signup POST
 app.post('/signup', async (req, res) => {
-  const { username, password } = req.body;
-  if (!username || !password) return res.render('signup', { error: 'All fields required' });
+  const { username, email, password } = req.body;
+  if (!username || !email || !password) return res.render('signup', { error: 'All fields required' });
 
-  const existing = await User.findOne({ username });
-  if (existing) return res.render('signup', { error: 'Username exists' });
+  const existing = await User.findOne({ $or: [{ username }, { email }] });
+  if (existing) return res.render('signup', { error: 'Username or email exists' });
 
   const passwordHash = await bcrypt.hash(password, 12);
   const linkCode = Math.random().toString(36).substring(2, 10).toUpperCase();
 
-  const user = await User.create({ username, passwordHash, linkCode });
+  const user = await User.create({ username, email, passwordHash, linkCode });
+
   req.session.userId = user._id;
   req.session.user = user;
   res.redirect('/dashboard');
@@ -78,12 +70,14 @@ app.get('/login', (req, res) => res.render('login'));
 
 // Login POST
 app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  const user = await User.findOne({ username });
-  if (!user) return res.render('login', { error: 'Invalid username/password' });
+  const { usernameOrEmail, password } = req.body;
+  const user = await User.findOne({ 
+    $or: [{ username: usernameOrEmail }, { email: usernameOrEmail }] 
+  });
+  if (!user) return res.render('login', { error: 'Invalid username/email or password' });
 
   const match = await bcrypt.compare(password, user.passwordHash);
-  if (!match) return res.render('login', { error: 'Invalid username/password' });
+  if (!match) return res.render('login', { error: 'Invalid username/email or password' });
 
   req.session.userId = user._id;
   req.session.user = user;
@@ -102,10 +96,8 @@ app.post('/logout', requireAuth, (req, res) => {
   res.redirect('/');
 });
 
-// --------------------
-// Start Bot & Server
-// --------------------
+// Start Bot
 startBot();
 
-// Start Express
+// Start server
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
