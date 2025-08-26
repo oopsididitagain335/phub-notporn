@@ -1,6 +1,6 @@
 // commands/link.js
 
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, ApplicationFlags } = require('discord.js');
 const User = require('../models/User');
 
 module.exports = {
@@ -14,34 +14,41 @@ module.exports = {
     ),
 
   async execute(interaction) {
+    // ✅ Defer immediately to avoid timeout
+    await interaction.deferReply({ ephemeral: true });
+
     const code = interaction.options.getString('code').toUpperCase();
 
-    // Find user by linkCode
-    const user = await User.findOne({ linkCode: code });
+    try {
+      const user = await User.findOne({ linkCode: code });
 
-    if (!user) {
-      return interaction.reply({
-        content: '❌ Invalid or expired link code. It may have already been used.',
-        ephemeral: true
+      if (!user) {
+        return interaction.editReply({
+          content: '❌ Invalid or expired link code. It may have already been used.'
+        });
+      }
+
+      if (user.discordId) {
+        return interaction.editReply({
+          content: '⚠️ This account has already been linked to a Discord user.'
+        });
+      }
+
+      // ✅ Link account
+      user.discordId = interaction.user.id;
+      user.linkCode = null;
+      await user.save();
+
+      // ✅ Send final reply
+      return interaction.editReply({
+        content: '✅ Your PulseHub account has been successfully linked to Discord!\nYou can now access the website.'
+      });
+
+    } catch (err) {
+      console.error('Error in /link command:', err);
+      return interaction.editReply({
+        content: '❌ An error occurred while linking your account. Please try again.'
       });
     }
-
-    // Prevent reuse if already linked
-    if (user.discordId) {
-      return interaction.reply({
-        content: '⚠️ This account has already been linked to a Discord user.',
-        ephemeral: true
-      });
-    }
-
-    // ✅ Perform linking
-    user.discordId = interaction.user.id;
-    user.linkCode = null; // 🔒 One-time use: invalidate code
-    await user.save();
-
-    return interaction.reply({
-      content: '✅ Your PulseHub account has been successfully linked to Discord!\nYou can now access the website.',
-      ephemeral: true
-    });
   }
 };
