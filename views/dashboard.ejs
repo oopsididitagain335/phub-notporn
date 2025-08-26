@@ -1,15 +1,29 @@
+<!-- views/dashboard.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Dashboard</title>
-<link rel="stylesheet" href="/style.css">
+  <meta charset="UTF-8">
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<div class="container">
-  <h1>Welcome, <%= user.username %></h1>
-  <p>Your PulseHub link code: <strong><%= user.linkCode || 'Linked!' %></strong></p>
-  <form action="/logout" method="POST"><button>Logout</button></form>
-</div>
+  <div class="container">
+    <h1>Dashboard</h1>
+    <p>Welcome, <strong><%= user.username %></strong>!</p>
+    <p>Email: <%= user.email %></p>
+
+    <div class="code-box">
+      <label>Your Link Code (use in Discord with /link):</label>
+      <input type="text" value="<%= user.linkCode %>" readonly onclick="this.select()">
+    </div>
+
+    <form action="/api/generate-link-code" method="POST">
+      <button type="submit">🔄 Regenerate Code</button>
+    </form>
+
+    <form action="/logout" method="POST" style="margin-top: 20px;">
+      <button type="submit">Logout</button>
+    </form>
+  </div>
 </body>
 </html>
