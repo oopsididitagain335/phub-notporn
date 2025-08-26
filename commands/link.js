@@ -1,4 +1,5 @@
 // commands/link.js
+
 const { SlashCommandBuilder } = require('discord.js');
 const User = require('../models/User');
 
@@ -14,29 +15,32 @@ module.exports = {
 
   async execute(interaction) {
     const code = interaction.options.getString('code').toUpperCase();
+
+    // Find user by linkCode
     const user = await User.findOne({ linkCode: code });
 
     if (!user) {
       return interaction.reply({
-        content: '❌ Invalid or expired link code.',
+        content: '❌ Invalid or expired link code. It may have already been used.',
         ephemeral: true
       });
     }
 
+    // Prevent reuse if already linked
     if (user.discordId) {
       return interaction.reply({
-        content: '⚠️ This account is already linked to a Discord user.',
+        content: '⚠️ This account has already been linked to a Discord user.',
         ephemeral: true
       });
     }
 
-    // ✅ Link account
+    // ✅ Perform linking
     user.discordId = interaction.user.id;
-    user.linkCode = null; // 🔒 Permanently invalidate
+    user.linkCode = null; // 🔒 One-time use: invalidate code
     await user.save();
 
     return interaction.reply({
-      content: '✅ Account linked successfully! You can now access the site.',
+      content: '✅ Your PulseHub account has been successfully linked to Discord!\nYou can now access the website.',
       ephemeral: true
     });
   }
