@@ -4,7 +4,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const User = require('../models/User');
 
 module.exports = {
-  data: new SlashCommandBuilder()
+   new SlashCommandBuilder()
     .setName('link')
     .setDescription('Link your PulseHub account to Discord')
     .addStringOption(option =>
@@ -16,22 +16,22 @@ module.exports = {
   async execute(interaction) {
     // ✅ 1. If already replied or deferred, do nothing
     if (interaction.replied || interaction.deferred) {
-      console.log('⚠️ Interaction already handled, skipping...');
+      console.warn(`[Link] Interaction already handled: ${interaction.id}`);
       return;
     }
 
-    // ✅ 2. Defer immediately
+    // ✅ 2. Defer immediately (within 3 seconds)
     try {
       await interaction.deferReply({ ephemeral: true });
     } catch (err) {
-      // 🚫 If defer fails (e.g., unknown interaction), log and exit
-      console.error('❌ Failed to defer reply:', err.message);
-      return;
+      console.error('[Link] Failed to defer reply:', err.message);
+      return; // Interaction likely expired
     }
 
-    const code = interaction.options.getString('code').toUpperCase();
+    const code = interaction.options.getString('code').toUpperCase().trim();
 
     try {
+      // ✅ 3. Find user by linkCode
       const user = await User.findOne({ linkCode: code });
 
       if (!user) {
@@ -46,7 +46,7 @@ module.exports = {
         });
       }
 
-      // ✅ Link account
+      // ✅ 4. Link account
       user.discordId = interaction.user.id;
       user.linkCode = null;
       await user.save();
@@ -56,10 +56,14 @@ module.exports = {
       });
 
     } catch (err) {
-      console.error('Error in /link command:', err);
+      console.error('[Link] Error during execution:', err);
+
+      // ✅ 5. Always try to respond
       if (!interaction.replied) {
         await interaction.editReply({
-          content: '❌ An error occurred while linking your account.'
+          content: '❌ An error occurred while linking. Please try again or contact support.'
+        }).catch(() => {
+          console.error('Could not send error reply');
         });
       }
     }
