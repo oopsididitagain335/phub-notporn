@@ -1,7 +1,6 @@
 // bot.js
 
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
-const { REST, Routes } = require('@discordjs/rest');
+const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -35,16 +34,22 @@ for (const file of commandFiles) {
 client.once('clientReady', async () => {
   console.log(`🤖 ${client.user.tag} is ready!`);
 
+  // ✅ Use REST and Routes from discord.js
   const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
+
   const clientId = process.env.DISCORD_CLIENT_ID;
   const guildId = '1410014241896927412'; // Your server ID
 
   try {
+    console.log(`🔁 Deploying ${client.commands.size} commands to guild ${guildId}...`);
+
+    // ✅ This will now work
     await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
       { body: [...client.commands.values()].map(cmd => cmd.data.toJSON()) }
     );
-    console.log(`✅ Commands deployed to guild ${guildId}`);
+
+    console.log('✅ Commands deployed successfully!');
   } catch (err) {
     console.error('❌ Command deploy failed:', err);
   }
@@ -63,13 +68,13 @@ client.on('interactionCreate', async (interaction) => {
     console.error('❌ Command error:', err);
     if (interaction.replied || interaction.deferred) return;
     await interaction.reply({
-      content: '❌ An error occurred. Try again.',
+      content: '❌ An error occurred while running this command.',
       ephemeral: true
     }).catch(console.error);
   }
 });
 
-// ✅ Fixed: guildBanAdd with correct audit log type
+// Guild ban handler
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
@@ -89,12 +94,12 @@ client.on('guildBanAdd', async (ban) => {
       return;
     }
 
-    // ✅ Use number 22 for MEMBER_BAN_ADD
+    // ✅ Use audit log type 22 = MEMBER_BAN_ADD
     let reason = 'No reason provided';
     try {
       const audit = await guild.fetchAuditLogs({
         limit: 1,
-        type: 22 // ← Correct enum value for MEMBER_BAN_ADD
+        type: 22 // ← Correct number, not string
       });
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
@@ -117,7 +122,7 @@ client.on('guildBanAdd', async (ban) => {
 // Start bot
 function startBot() {
   if (!process.env.BOT_TOKEN) {
-    throw new Error('❌ BOT_TOKEN missing in .env');
+    throw new Error('❌ BOT_TOKEN is missing in .env');
   }
   client.login(process.env.BOT_TOKEN).catch(console.error);
 }
