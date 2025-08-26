@@ -1,37 +1,36 @@
 // commands/link.js
 
 const { SlashCommandBuilder } = require('discord.js');
+const User = require('../models/User');
 
 module.exports = {
-  data: new SlashCommandBuilder()
+   new SlashCommandBuilder()
     .setName('link')
     .setDescription('Link your PulseHub account to Discord')
     .addStringOption(option =>
-      option
-        .setName('code')
+      option.setName('code')
         .setDescription('Your link code from the website')
         .setRequired(true)
     ),
 
   async execute(interaction) {
-    // Prevent double replies
+    // ✅ Check if already replied
     if (interaction.replied || interaction.deferred) {
-      return console.warn('Interaction already handled:', interaction.id);
+      console.warn('[Link] Interaction already handled:', interaction.id);
+      return;
     }
 
-    // Defer reply immediately
+    // ✅ Defer immediately
     try {
       await interaction.deferReply({ ephemeral: true });
     } catch (err) {
-      console.error('Failed to defer reply:', err.message);
-      return;
+      console.error('[Link] Failed to defer:', err.message);
+      return; // Exit early
     }
 
     const code = interaction.options.getString('code').toUpperCase().trim();
 
     try {
-      // Dynamically require User to avoid circular issues
-      const User = require('../models/User');
       const user = await User.findOne({ linkCode: code });
 
       if (!user) {
@@ -46,7 +45,7 @@ module.exports = {
         });
       }
 
-      // Link the account
+      // ✅ Link account
       user.discordId = interaction.user.id;
       user.linkCode = null;
       await user.save();
@@ -56,11 +55,15 @@ module.exports = {
       });
 
     } catch (err) {
-      console.error('Error in /link command:', err);
+      console.error('[Link] Error during execution:', err);
+
+      // ✅ Always try to respond, even on error
       if (!interaction.replied) {
         await interaction.editReply({
-          content: '❌ An error occurred. Please try again or contact support.'
-        }).catch(console.error);
+          content: '❌ An error occurred while linking. Please try again or contact support.'
+        }).catch(() => {
+          console.error('Could not send error reply');
+        });
       }
     }
   }
