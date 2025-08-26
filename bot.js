@@ -5,18 +5,20 @@ const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// ✅ 1. Create the Discord client
+// ✅ 1. Import REST and Routes from @discordjs/rest
+const { REST, Routes } = require('@discordjs/rest');
+
+// ✅ 2. Create Discord client
 const client = new Client({
   intents: [
-    GatewayIntentBits.Guilds,        // Required for slash commands
-    GatewayIntentBits.GuildBans       // Required for ban detection
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildBans
   ]
 });
 
-// ✅ 2. Set up command collection
 client.commands = new Collection();
 
-// Load all commands from /commands folder
+// Load commands
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -32,11 +34,10 @@ for (const file of commandFiles) {
   }
 }
 
-// ✅ 3. Ready event – Register commands
-client.once('ready', async () => {
+// ✅ 3. Use 'clientReady' instead of 'ready' (v14+)
+client.once('clientReady', async () => {
   console.log(`🤖 ${client.user.tag} is online!`);
 
-  const { REST, Routes } = require('@discordjs/rest');
   const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
 
   const clientId = process.env.DISCORD_CLIENT_ID;
@@ -45,6 +46,7 @@ client.once('ready', async () => {
   try {
     console.log(`🔁 Deploying ${client.commands.size} commands to guild ${guildId}...`);
 
+    // ✅ Now Routes is defined
     await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
       { body: [...client.commands.values()].map(cmd => cmd.data.toJSON()) }
@@ -56,7 +58,7 @@ client.once('ready', async () => {
   }
 });
 
-// ✅ 4. Handle interactions (slash commands)
+// ✅ 4. Handle interactions
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -87,7 +89,6 @@ client.on('guildBanAdd', async (ban) => {
 
     console.log(`🚫 ${user.tag} was banned from ${guild.name}`);
 
-    // Dynamically require User model to avoid circular issues
     const User = require('./models/User');
     const dbUser = await User.findOne({ discordId: user.id });
 
@@ -96,10 +97,12 @@ client.on('guildBanAdd', async (ban) => {
       return;
     }
 
-    // Get ban reason from audit log
     let reason = 'No reason provided';
     try {
-      const audit = await guild.fetchAuditLogs({ limit: 1, type: 'MEMBER_BAN_ADD' });
+      const audit = await guild.fetchAuditLogs({
+        limit: 1,
+        type: 'MEMBER_BAN_ADD'
+      });
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
         reason = log.reason || reason;
@@ -108,18 +111,17 @@ client.on('guildBanAdd', async (ban) => {
       console.warn('Failed to fetch audit log:', auditErr.message);
     }
 
-    // Mark user as banned
     dbUser.isBanned = true;
     dbUser.banReason = reason;
     await dbUser.save();
 
-    console.log(`✅ PulseHub account ${dbUser.username} marked as banned`);
+    console.log(`✅ ${dbUser.username} marked as banned`);
   } catch (err) {
-    console.error('❌ Error in guildBanAdd handler:', err);
+    console.error('❌ Error in guildBanAdd:', err);
   }
 });
 
-// ✅ 6. Export startBot function
+// ✅ 6. Start bot
 function startBot() {
   if (!process.env.BOT_TOKEN) {
     throw new Error('❌ BOT_TOKEN is missing in .env');
