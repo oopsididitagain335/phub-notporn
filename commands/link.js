@@ -1,6 +1,6 @@
 // commands/link.js
 
-const { SlashCommandBuilder, ApplicationFlags } = require('discord.js');
+const { SlashCommandBuilder } = require('discord.js');
 const User = require('../models/User');
 
 module.exports = {
@@ -14,8 +14,20 @@ module.exports = {
     ),
 
   async execute(interaction) {
-    // ✅ Defer immediately to avoid timeout
-    await interaction.deferReply({ ephemeral: true });
+    // ✅ 1. If already replied or deferred, do nothing
+    if (interaction.replied || interaction.deferred) {
+      console.log('⚠️ Interaction already handled, skipping...');
+      return;
+    }
+
+    // ✅ 2. Defer immediately
+    try {
+      await interaction.deferReply({ ephemeral: true });
+    } catch (err) {
+      // 🚫 If defer fails (e.g., unknown interaction), log and exit
+      console.error('❌ Failed to defer reply:', err.message);
+      return;
+    }
 
     const code = interaction.options.getString('code').toUpperCase();
 
@@ -23,13 +35,13 @@ module.exports = {
       const user = await User.findOne({ linkCode: code });
 
       if (!user) {
-        return interaction.editReply({
+        return await interaction.editReply({
           content: '❌ Invalid or expired link code. It may have already been used.'
         });
       }
 
       if (user.discordId) {
-        return interaction.editReply({
+        return await interaction.editReply({
           content: '⚠️ This account has already been linked to a Discord user.'
         });
       }
@@ -39,16 +51,17 @@ module.exports = {
       user.linkCode = null;
       await user.save();
 
-      // ✅ Send final reply
-      return interaction.editReply({
+      return await interaction.editReply({
         content: '✅ Your PulseHub account has been successfully linked to Discord!\nYou can now access the website.'
       });
 
     } catch (err) {
       console.error('Error in /link command:', err);
-      return interaction.editReply({
-        content: '❌ An error occurred while linking your account. Please try again.'
-      });
+      if (!interaction.replied) {
+        await interaction.editReply({
+          content: '❌ An error occurred while linking your account.'
+        });
+      }
     }
   }
 };
