@@ -1,14 +1,11 @@
 // bot.js
 
 const { Client, Collection, GatewayIntentBits } = require('discord.js');
+const { REST, Routes } = require('@discordjs/rest');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
 
-// ✅ 1. Import REST and Routes from @discordjs/rest
-const { REST, Routes } = require('@discordjs/rest');
-
-// ✅ 2. Create Discord client
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -30,35 +27,30 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
     console.log(`✅ Loaded command: ${command.data.name}`);
   } else {
-    console.warn(`❌ [WARNING] Command at ${filePath} missing "data" or "execute"`);
+    console.warn(`❌ [WARNING] Invalid command at ${filePath}`);
   }
 }
 
-// ✅ 3. Use 'clientReady' instead of 'ready' (v14+)
+// Ready event
 client.once('clientReady', async () => {
-  console.log(`🤖 ${client.user.tag} is online!`);
+  console.log(`🤖 ${client.user.tag} is ready!`);
 
   const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
-
   const clientId = process.env.DISCORD_CLIENT_ID;
   const guildId = '1410014241896927412'; // Your server ID
 
   try {
-    console.log(`🔁 Deploying ${client.commands.size} commands to guild ${guildId}...`);
-
-    // ✅ Now Routes is defined
     await rest.put(
       Routes.applicationGuildCommands(clientId, guildId),
       { body: [...client.commands.values()].map(cmd => cmd.data.toJSON()) }
     );
-
-    console.log('✅ Commands deployed successfully!');
+    console.log(`✅ Commands deployed to guild ${guildId}`);
   } catch (err) {
-    console.error('❌ Failed to deploy commands:', err);
+    console.error('❌ Command deploy failed:', err);
   }
 });
 
-// ✅ 4. Handle interactions
+// Interaction handler
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -71,13 +63,13 @@ client.on('interactionCreate', async (interaction) => {
     console.error('❌ Command error:', err);
     if (interaction.replied || interaction.deferred) return;
     await interaction.reply({
-      content: '❌ An error occurred while running this command.',
+      content: '❌ An error occurred. Try again.',
       ephemeral: true
     }).catch(console.error);
   }
 });
 
-// ✅ 5. Handle bans
+// ✅ Fixed: guildBanAdd with correct audit log type
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
@@ -97,11 +89,12 @@ client.on('guildBanAdd', async (ban) => {
       return;
     }
 
+    // ✅ Use number 22 for MEMBER_BAN_ADD
     let reason = 'No reason provided';
     try {
       const audit = await guild.fetchAuditLogs({
         limit: 1,
-        type: 'MEMBER_BAN_ADD'
+        type: 22 // ← Correct enum value for MEMBER_BAN_ADD
       });
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
@@ -115,16 +108,16 @@ client.on('guildBanAdd', async (ban) => {
     dbUser.banReason = reason;
     await dbUser.save();
 
-    console.log(`✅ ${dbUser.username} marked as banned`);
+    console.log(`✅ ${dbUser.username} marked as banned: ${reason}`);
   } catch (err) {
     console.error('❌ Error in guildBanAdd:', err);
   }
 });
 
-// ✅ 6. Start bot
+// Start bot
 function startBot() {
   if (!process.env.BOT_TOKEN) {
-    throw new Error('❌ BOT_TOKEN is missing in .env');
+    throw new Error('❌ BOT_TOKEN missing in .env');
   }
   client.login(process.env.BOT_TOKEN).catch(console.error);
 }
