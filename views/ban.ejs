@@ -1,0 +1,56 @@
+<!-- views/ban.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Account Banned</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .ban-container {
+      text-align: center;
+      max-width: 500px;
+      margin: 40px auto;
+      padding: 30px;
+      background: #ff4d4d;
+      color: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    }
+    .ban-container h1 {
+      margin-bottom: 15px;
+      font-size: 2em;
+    }
+    .ban-reason {
+      background: rgba(0,0,0,0.2);
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+    }
+    .ban-actions a {
+      color: #fff;
+      text-decoration: underline;
+    }
+    .ban-actions a:hover {
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="ban-container">
+    <h1>🚫 Account Banned</h1>
+    <p>You are no longer permitted to access PulseHub.</p>
+
+    <div class="ban-reason">
+      <strong>Reason:</strong><br>
+      <%= banReason %>
+    </div>
+
+    <p>If you believe this was a mistake, contact support on Discord.</p>
+
+    <div class="ban-actions">
+      <a href="/logout">← Logout</a>
+    </div>
+  </div>
+</body>
+</html>
