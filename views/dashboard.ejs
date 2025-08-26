@@ -12,16 +12,31 @@
     <p>Welcome, <strong><%= user.username %></strong>!</p>
     <p>Email: <%= user.email %></p>
 
-    <div class="code-box">
-      <label>Your Link Code (use in Discord with /link):</label>
-      <input type="text" value="<%= user.linkCode %>" readonly onclick="this.select()">
-    </div>
+    <% if (user.discordId) { %>
+      <!-- Already linked to Discord -->
+      <div class="linked-status">
+        <p>✅ Your account is linked to Discord.</p>
+        <p style="color: #aaa; font-size: 0.9em;">Link code has been disabled for security.</p>
+      </div>
+    <% } else if (user.linkCode) { %>
+      <!-- Not linked yet — show link code and regenerate option -->
+      <div class="code-box">
+        <label>Your Link Code (use in Discord with <code>/link</code>):</label>
+        <input type="text" value="<%= user.linkCode %>" readonly onclick="this.select()">
+      </div>
 
-    <form action="/api/generate-link-code" method="POST">
-      <button type="submit">🔄 Regenerate Code</button>
-    </form>
+      <form action="/api/generate-link-code" method="POST">
+        <button type="submit">🔄 Regenerate Code</button>
+      </form>
+    <% } else { %>
+      <!-- Fallback: No code (shouldn't happen, but just in case) -->
+      <p>⏳ Generating new link code...</p>
+      <form action="/api/generate-link-code" method="POST">
+        <button type="submit">Generate Code</button>
+      </form>
+    <% } %>
 
-    <form action="/logout" method="POST" style="margin-top: 20px;">
+    <form action="/logout" method="POST" style="margin-top: 30px;">
       <button type="submit">Logout</button>
     </form>
   </div>
