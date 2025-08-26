@@ -1,0 +1,22 @@
+<!-- views/home.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Home</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🎉 Welcome, <%= user.username %>!</h1>
+    <p>✅ Your account is successfully linked to Discord.</p>
+    <p>You now have full access to PulseHub.</p>
+
+    <div class="actions">
+      <form action="/logout" method="POST">
+        <button type="submit">Logout</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>
