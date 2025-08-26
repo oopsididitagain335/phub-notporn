@@ -1,0 +1,25 @@
+<!-- views/link.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Link Account</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <h1>🔗 Link Your Discord Account</h1>
+    <p>Hello, <strong><%= username %></strong>!</p>
+    <p>To access the full site, link your account via Discord.</p>
+
+    <ol>
+      <li>Join our server: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
+      <li>Type in any channel: <code>/link code:YOUR_CODE</code></li>
+      <li>Wait for the ✅ confirmation</li>
+    </ol>
+
+    <p>Once linked, refresh this page to continue.</p>
+    <button onclick="location.reload()">Check Status</button>
+  </div>
+</body>
+</html>
