@@ -22,14 +22,18 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
-// Sessions
+// Session Store
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'supersecret',
     resave: false,
     saveUninitialized: false,
     store: MongoStore.create({ mongoUrl: process.env.MONGO_URI }),
-    cookie: { httpOnly: true, maxAge: 1000 * 60 * 60 * 24 } // 24 hours
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production', // Enable in HTTPS
+      maxAge: 1000 * 60 * 60 * 24 // 24 hours
+    }
   })
 );
 
@@ -39,10 +43,25 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Ban Check Middleware (if user is banned, show ban page)
+async function checkBan(req, res, next) {
+  if (req.session.userId) {
+    const user = await User.findById(req.session.userId);
+    if (user?.isBanned) {
+      req.session.destroy(); // Optional: destroy session
+      return res.render('ban', { banReason: user.banReason || 'Violated community rules.' });
+    }
+  }
+  next();
+}
+
 // MongoDB Connection
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
   .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('MongoDB error:', err));
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
 // Routes
 
@@ -54,13 +73,14 @@ app.get('/', (req, res) => {
 // Signup POST
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
+
   if (!username || !email || !password) {
-    return res.render('signup', { error: 'All fields required' });
+    return res.render('signup', { error: 'All fields are required.' });
   }
 
   const existing = await User.findOne({ $or: [{ username }, { email }] });
   if (existing) {
-    return res.render('signup', { error: 'Username or email already taken' });
+    return res.render('signup', { error: 'Username or email already taken.' });
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -88,12 +108,17 @@ app.post('/login', async (req, res) => {
   });
 
   if (!user) {
-    return res.render('login', { error: 'Invalid username/email or password' });
+    return res.render('login', { error: 'Invalid username/email or password.' });
+  }
+
+  // 👇 Check if banned before password check
+  if (user.isBanned) {
+    return res.render('ban', { banReason: user.banReason || 'You have been banned from this service.' });
   }
 
   const match = await bcrypt.compare(password, user.passwordHash);
   if (!match) {
-    return res.render('login', { error: 'Invalid username/email or password' });
+    return res.render('login', { error: 'Invalid username/email or password.' });
   }
 
   req.session.userId = user._id;
@@ -102,8 +127,8 @@ app.post('/login', async (req, res) => {
   res.redirect('/dashboard');
 });
 
-// Dashboard – Show link code
-app.get('/dashboard', requireAuth, async (req, res) => {
+// Dashboard (protected + ban check)
+app.get('/dashboard', requireAuth, checkBan, async (req, res) => {
   const user = await User.findById(req.session.userId);
   res.render('dashboard', { user });
 });
@@ -118,8 +143,18 @@ app.post('/api/generate-link-code', requireAuth, async (req, res) => {
 
 // Logout
 app.post('/logout', requireAuth, (req, res) => {
-  req.session.destroy();
-  res.redirect('/');
+  req.session.destroy((err) => {
+    if (err) {
+      return res.redirect('/dashboard');
+    }
+    res.clearCookie('connect.sid');
+    res.redirect('/');
+  });
+});
+
+// 404 for undefined routes
+app.use((req, res) => {
+  res.status(404).render('404', { message: 'Page not found.' });
 });
 
 // Start Discord Bot
