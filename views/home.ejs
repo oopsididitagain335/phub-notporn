@@ -12,6 +12,15 @@
     <p>✅ Your account is successfully linked to Discord.</p>
     <p>You now have full access to PulseHub.</p>
 
+    <!-- Show status based on totalUsers -->
+    <div class="status">
+      <% if (totalUsers >= 50) { %>
+        <p><strong>Status:</strong> <span style="color: green;">Loading...</span></p>
+      <% } else { %>
+        <p><strong>Status:</strong> <span style="color: #ff9900;">Coming Soon</span></p>
+      <% } %>
+    </div>
+
     <!-- Show total registered users -->
     <div class="stats">
       <p><strong>Total Users Registered:</strong> <%= totalUsers %></p>
