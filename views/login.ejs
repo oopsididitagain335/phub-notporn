@@ -1,3 +1,4 @@
+<!-- views/login.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,23 +11,16 @@
     <h1>Login</h1>
 
     <!-- Show error if present -->
-    <% if (typeof error !== 'undefined') { %>
+    <% if (typeof error !== 'undefined' && error) { %>
       <p class="error"><%= error %></p>
     <% } %>
 
-    <!-- Login form -->
+    <!-- Corrected form: single field for username OR email -->
     <form action="/login" method="POST">
       <input 
         type="text" 
-        name="username" 
-        placeholder="Username" 
-        required 
-        autocomplete="off"
-      >
-      <input 
-        type="email" 
-        name="email" 
-        placeholder="Email" 
+        name="usernameOrEmail" 
+        placeholder="Username or Email" 
         required 
         autocomplete="off"
       >
