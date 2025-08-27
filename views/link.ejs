@@ -28,6 +28,7 @@
       border-radius: 6px;
       cursor: pointer;
       font-size: 1em;
+      margin: 5px;
     }
     button:hover {
       background: #0056b3;
@@ -35,6 +36,11 @@
     .instructions {
       margin: 20px 0;
       line-height: 1.6;
+    }
+    .footer {
+      margin-top: 30px;
+      font-size: 0.9em;
+      color: #aaa;
     }
   </style>
 </head>
@@ -51,25 +57,25 @@
       </ol>
     </div>
 
-    <!-- ✅ Show the real link code -->
+    <!-- ✅ Show only the raw command: /link ABC123XY -->
     <div class="code-display">
-      <code>/link code:<%= linkCode %></code>
+      <code>/link <%= linkCode %></code>
     </div>
 
     <button onclick="copyCode()">📋 Copy Command</button>
     <button onclick="checkLink()">✅ I've Linked — Check Status</button>
 
-    <p style="margin-top: 20px; font-size: 0.9em; color: #aaa;">
+    <p class="footer">
       This code can only be used once. After linking, it will be permanently disabled.
     </p>
   </div>
 
   <script>
-    // Copy command to clipboard
+    // ✅ Copy only the code or full command without "code:"
     function copyCode() {
-      const code = '/link code:<%= linkCode %>';
-      navigator.clipboard.writeText(code).then(() => {
-        alert('Command copied! Paste it in Discord.');
+      const command = '/link <%= linkCode %>'; // e.g., /link K7M2X9LP
+      navigator.clipboard.writeText(command).then(() => {
+        alert('Copied! Paste it in Discord.');
       }).catch(err => {
         console.error('Copy failed:', err);
         alert('Copy failed. Please copy manually.');
