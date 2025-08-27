@@ -1,36 +1,37 @@
 // commands/link.js
 
-const { SlashCommandBuilder } = require('discord.js');
-const User = require('../models/User');
+const { SlashCommandBuilder } = require('discord.js'); // ✅ REQUIRED!
 
 module.exports = {
-   new SlashCommandBuilder()
+  data: new SlashCommandBuilder() // ✅ Now valid
     .setName('link')
     .setDescription('Link your PulseHub account to Discord')
     .addStringOption(option =>
-      option.setName('code')
+      option
+        .setName('code')
         .setDescription('Your link code from the website')
         .setRequired(true)
     ),
 
   async execute(interaction) {
-    // ✅ Check if already replied
+    // Prevent double replies
     if (interaction.replied || interaction.deferred) {
-      console.warn('[Link] Interaction already handled:', interaction.id);
+      console.warn('Interaction already handled:', interaction.id);
       return;
     }
 
-    // ✅ Defer immediately
+    // Defer reply
     try {
       await interaction.deferReply({ ephemeral: true });
     } catch (err) {
-      console.error('[Link] Failed to defer:', err.message);
-      return; // Exit early
+      console.error('Failed to defer:', err.message);
+      return;
     }
 
     const code = interaction.options.getString('code').toUpperCase().trim();
 
     try {
+      const User = require('../models/User');
       const user = await User.findOne({ linkCode: code });
 
       if (!user) {
@@ -45,7 +46,7 @@ module.exports = {
         });
       }
 
-      // ✅ Link account
+      // Link account
       user.discordId = interaction.user.id;
       user.linkCode = null;
       await user.save();
@@ -55,15 +56,11 @@ module.exports = {
       });
 
     } catch (err) {
-      console.error('[Link] Error during execution:', err);
-
-      // ✅ Always try to respond, even on error
+      console.error('Error in /link:', err);
       if (!interaction.replied) {
         await interaction.editReply({
-          content: '❌ An error occurred while linking. Please try again or contact support.'
-        }).catch(() => {
-          console.error('Could not send error reply');
-        });
+          content: '❌ An error occurred. Please try again or contact support.'
+        }).catch(console.error);
       }
     }
   }
