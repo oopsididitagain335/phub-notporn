@@ -3,7 +3,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Home</title>
+  <title>Home - PulseHub</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -11,6 +11,11 @@
     <h1>🎉 Welcome, <%= user.username %>!</h1>
     <p>✅ Your account is successfully linked to Discord.</p>
     <p>You now have full access to PulseHub.</p>
+
+    <!-- Show total registered users -->
+    <div class="stats">
+      <p><strong>Total Users Registered:</strong> <%= totalUsers %></p>
+    </div>
 
     <div class="actions">
       <form action="/logout" method="POST">
