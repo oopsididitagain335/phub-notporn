@@ -1,4 +1,3 @@
-<!-- views/link.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -16,10 +15,6 @@
       margin: 20px 0;
       text-align: center;
     }
-    .code-display code {
-      background: none;
-      color: inherit;
-    }
     button {
       background: #007bff;
       color: white;
@@ -27,16 +22,10 @@
       padding: 10px 20px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 1em;
       margin: 5px;
+      font-size: 1em;
     }
-    button:hover {
-      background: #0056b3;
-    }
-    .instructions {
-      margin: 20px 0;
-      line-height: 1.6;
-    }
+    button:hover { background: #0056b3; }
     .footer {
       margin-top: 20px;
       font-size: 0.9em;
@@ -47,53 +36,33 @@
 <body>
   <div class="container">
     <h1>🔗 Link Your Discord Account</h1>
-
     <p>Hello, <strong><%= username %></strong>!</p>
 
-    <div class="instructions">
-      <ol>
-        <li>
-          <strong>Join our Discord server:</strong>
-          <a href="<%= inviteUrl %>" target="_blank" style="color:#00d1b2;">discord.gg/MmDs5ees4S</a>
-        </li>
-        <li>Type this command in any channel:</li>
-      </ol>
-    </div>
+    <ol>
+      <li>Join: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
+      <li>Type in Discord:</li>
+    </ol>
 
-    <!-- ✅ Show clean command: /link ABC123XY -->
     <div class="code-display">
       <code>/link <%= linkCode %></code>
     </div>
 
-    <button onclick="copyCode()">📋 Copy Command</button>
-    <button onclick="checkLink()">✅ I've Linked — Check Status</button>
+    <button onclick="copy()">📋 Copy</button>
+    <button onclick="check()">✅ Done</button>
 
     <div class="footer">
-      <p>
-        ⚠️ If the Discord link shows a blank page or "JavaScript" error, try opening it in an incognito tab or different browser.
-      </p>
-      <p>
-        This code can only be used once. After linking, it will be permanently disabled.
-      </p>
+      ⚠️ If you see "JavaScript" error, try incognito.<br>
+      Code works only once.
     </div>
   </div>
 
   <script>
-    // ✅ Copy only the clean command: /link ABC123XY
-    function copyCode() {
-      const command = '/link <%= linkCode %>'; // e.g., /link K7M2X9LP
-      navigator.clipboard.writeText(command).then(() => {
-        alert('Command copied! Paste it in Discord.');
-      }).catch(err => {
-        console.error('Copy failed:', err);
-        alert('Copy failed. Please copy manually.');
-      });
+    function copy() {
+      navigator.clipboard.writeText('/link <%= linkCode %>')
+        .then(() => alert('Copied!'))
+        .catch(() => alert('Copy failed.'));
     }
-
-    // Refresh to check if linked
-    function checkLink() {
-      window.location.reload();
-    }
+    function check() { window.location.reload(); }
   </script>
 </body>
 </html>
