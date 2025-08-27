@@ -103,8 +103,19 @@ async function generateUniqueLinkCode() {
 
 // Routes
 
-// Home / Signup
-app.get('/', (req, res) => {
+// Home / Landing Page
+app.get('/', async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    res.render('index', { totalUsers });
+  } catch (err) {
+    console.error('Landing page error:', err);
+    res.status(500).send('<h1>❌ Server Error</h1><p>Please try again later.</p>');
+  }
+});
+
+// Signup Page
+app.get('/signup', (req, res) => {
   res.render('signup', { error: null });
 });
 
@@ -192,7 +203,7 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ No trailing spaces
+    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ Clean invite
   });
 });
 
@@ -231,7 +242,7 @@ app.use((req, res) => {
   `);
 });
 
-// 500 Handler (No EJS needed)
+// 500 Handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(500).send(`
