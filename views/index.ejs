@@ -1,0 +1,152 @@
+<!-- views/index.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PulseHub - Coming Soon</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #121424, #1a2238);
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .container {
+      max-width: 600px;
+      padding: 50px 30px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      font-size: 2.8rem;
+      margin-bottom: 16px;
+      background: linear-gradient(90deg, #6d9eeb, #a084ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #cccccc;
+      line-height: 1.7;
+      margin-bottom: 20px;
+    }
+
+    .status h2 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+    }
+
+    .coming-soon {
+      color: #ffcc00;
+    }
+
+    .loading {
+      color: #00ff9d;
+    }
+
+    .progress-section {
+      margin: 25px auto;
+      max-width: 400px;
+    }
+
+    .progress-section p {
+      font-size: 1rem;
+      color: #ddd;
+      margin-bottom: 10px;
+    }
+
+    .progress-bar-outer {
+      height: 14px;
+      background: #333;
+      border-radius: 7px;
+      overflow: hidden;
+    }
+
+    .progress-bar-inner {
+      height: 100%;
+      width: <%= Math.min((totalUsers / 50) * 100, 100) %>%;
+      background: linear-gradient(90deg, #6d9eeb, #4285f4);
+      border-radius: 7px;
+      transition: width 0.4s ease;
+    }
+
+    .cta {
+      margin-top: 30px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #ffffff;
+      background: #5865F2;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.3s ease, transform 0.2s ease;
+    }
+
+    .btn:hover {
+      background: #4c58d7;
+      transform: translateY(-2px);
+    }
+
+    footer {
+      margin-top: 40px;
+      font-size: 0.9rem;
+      color: #888;
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="container">
+    <h1>✨ PulseHub</h1>
+    <p>Your gateway to a vibrant online community for creators and innovators.</p>
+
+    <div class="status">
+      <% if (totalUsers >= 50) { %>
+        <h2 class="loading">🚀 Loading... We're live!</h2>
+        <p>You're in! PulseHub is now launching for early members.</p>
+      <% } else { %>
+        <h2 class="coming-soon">🎉 Coming Soon</h2>
+        <p>Be one of the first 50 to join and unlock exclusive access.</p>
+      <% } %>
+    </div>
+
+    <div class="progress-section">
+      <p><strong>Early Access Progress:</strong> <%= totalUsers %>/50 members</p>
+      <div class="progress-bar-outer">
+        <div class="progress-bar-inner"></div>
+      </div>
+    </div>
+
+    <div class="cta">
+      <a href="/signup" class="btn">📝 Join the Waitlist</a>
+    </div>
+  </div>
+
+  <footer>
+    &copy; 2025 PulseHub. All rights reserved.
+  </footer>
+</body>
+</html>
