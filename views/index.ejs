@@ -4,219 +4,155 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PulseHub | For Creators, by Creators</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
+
     body {
       font-family: 'Inter', sans-serif;
-      background: radial-gradient(circle at top, #0f111a, #050508);
-      color: #fff;
+      background: #0a0c17;
+      color: #e0e0e0;
       min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px;
-      line-height: 1.7;
-    }
-    main {
-      flex: 1;
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 100%;
+      padding: 20px;
     }
+
     .container {
-      max-width: 900px;
+      max-width: 500px;
       width: 100%;
+      background: #121423;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       text-align: center;
-      padding: 60px 30px;
-      background: rgba(20, 22, 35, 0.75);
-      border-radius: 20px;
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(109, 158, 235, 0.15);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-      animation: fadeIn 1s ease-in-out;
-      position: relative;
-      overflow: hidden;
+      border: 1px solid rgba(109, 158, 235, 0.1);
     }
-    .container::before {
-      content: "";
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: radial-gradient(circle, rgba(109, 158, 235, 0.05) 0%, transparent 70%);
-      z-index: -1;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+
     .logo {
-      font-size: 4rem;
-      margin-bottom: 20px;
-      color: #6d9eeb;
-      text-shadow: 0 0 20px rgba(109,158,235,0.5);
-      animation: pulse 3s infinite;
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 24px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5 3C5 3 7 10 12 10C17 10 19 3 19 3M5 3C5 3 7 17 12 17C17 17 19 3 19 3" stroke="%236d9eeb" stroke-width="2" stroke-linecap="round"/><path d="M12 10V14" stroke="%236d9eeb" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="10" r="2" fill="%236d9eeb"/><circle cx="12" cy="14" r="2" fill="%236d9eeb"/></svg>') center/contain no-repeat;
+      background-color: transparent;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
     }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.05); }
-      100% { transform: scale(1); }
+
+    .logo:hover {
+      transform: scale(1.05);
     }
+
     h1 {
       font-family: 'Poppins', sans-serif;
-      font-size: 3rem;
-      font-weight: 700;
-      background: linear-gradient(90deg, #6d9eeb, #a084ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 20px;
-      letter-spacing: 1px;
+      font-size: 2.2rem;
+      font-weight: 600;
+      color: #6d9eeb;
+      margin-bottom: 12px;
       position: relative;
-      display: inline-block;
     }
+
     h1::after {
-      content: "";
+      content: '';
       position: absolute;
       bottom: -5px;
       left: 0;
       width: 100%;
-      height: 3px;
+      height: 2px;
       background: linear-gradient(90deg, #6d9eeb, #a084ff);
-      border-radius: 2px;
+      border-radius: 1px;
     }
+
     .subtitle {
-      font-size: 1.2rem;
-      color: #b5b5b5;
-      margin-bottom: 30px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      font-weight: 300;
+      font-size: 1rem;
+      color: #ccc;
+      margin-bottom: 24px;
+      line-height: 1.6;
     }
-    .benefits {
-      margin: 30px 0;
-      text-align: left;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
+
+    .tagline {
+      font-style: italic;
+      color: #aaa;
+      margin-bottom: 32px;
+      font-size: 0.9rem;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
       padding-left: 20px;
+      margin-bottom: 32px;
     }
-    .benefits li {
-      margin-bottom: 20px;
-      padding-left: 35px;
-      position: relative;
+
+    li {
+      margin-bottom: 16px;
+      font-size: 0.95rem;
       color: #ddd;
-      font-size: 1.05rem;
-      line-height: 1.5;
+      position: relative;
+      padding-left: 28px;
     }
-    .benefits li::before {
-      content: "✨";
+
+    li::before {
+      content: '✨';
       position: absolute;
       left: 0;
       top: 0;
-      font-size: 1.2rem;
-      transition: transform 0.3s ease;
+      color: #6d9eeb;
+      font-size: 0.8rem;
     }
-    .benefits li:hover::before {
-      transform: rotate(15deg) scale(1.2);
-    }
-    .cta {
-      margin-top: 40px;
-    }
+
     .btn {
       display: inline-block;
-      padding: 16px 40px;
-      font-size: 1.2rem;
-      font-weight: 600;
+      padding: 12px 32px;
+      font-size: 1rem;
+      font-weight: 500;
       color: white;
-      background: linear-gradient(90deg, #5865F2, #4c58d7);
-      border-radius: 12px;
+      background: linear-gradient(90deg, #6d9eeb, #a084ff);
+      border-radius: 8px;
       text-decoration: none;
       transition: all 0.3s ease;
-      box-shadow: 0 8px 20px rgba(88, 101, 242, 0.35);
-      position: relative;
-      overflow: hidden;
       border: none;
       cursor: pointer;
     }
-    .btn::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: 0.5s;
-    }
-    .btn:hover::after {
-      left: 100%;
-    }
+
     .btn:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 28px rgba(88, 101, 242, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(109, 158, 235, 0.3);
     }
-    footer {
-      padding: 20px;
-      text-align: center;
-      font-size: 0.9rem;
-      color: #888;
-      margin-top: 20px;
-    }
-    .tagline {
-      font-style: italic;
-      margin-top: 10px;
-      color: #999;
-      font-size: 1rem;
-    }
-    @media (max-width: 768px) {
-      .container {
-        padding: 40px 20px;
-      }
-      h1 {
-        font-size: 2.2rem;
-      }
-      .subtitle {
-        font-size: 1rem;
-      }
-      .benefits li {
-        padding-left: 30px;
-        font-size: 0.95rem;
-      }
+
+    .btn svg {
+      width: 16px;
+      height: 16px;
+      margin-right: 8px;
+      vertical-align: middle;
     }
   </style>
 </head>
 <body>
-  <main>
-    <div class="container">
-      <div class="logo">🎙️</div>
-      <h1>PulseHub</h1>
-      <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
-      <p class="tagline">Where creativity meets connection</p>
+  <div class="container">
+    <div class="logo"></div>
+    <h1>PulseHub</h1>
+    <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
+    <p class="tagline">Where creativity meets connection</p>
 
-      <ul class="benefits">
-        <li>Network with top creators & collaborate on projects</li>
-        <li>Get early access to tools, templates, and resources</li>
-        <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
-        <li>Safe space to share ideas, without the noise</li>
-      </ul>
+    <ul>
+      <li>Network with top creators & collaborate on projects</li>
+      <li>Get early access to tools, templates, and resources</li>
+      <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
+      <li>Safe space to share ideas, without the noise</li>
+    </ul>
 
-      <div class="cta">
-        <a href="/signup" class="btn">➕ Join the Waitlist</a>
-      </div>
-    </div>
-  </main>
-
-  <footer>
-    © 2025 PulseHub. All rights reserved. Made for creators, by creators.
-  </footer>
+    <a href="/signup" class="btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+        <path d="M12 4v16m-8-8h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Join the Waitlist
+    </a>
+  </div>
 </body>
 </html>
