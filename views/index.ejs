@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PulseHub | For Creators, by Creators</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <style>
     * {
       margin: 0;
@@ -41,6 +41,18 @@
       border: 1px solid rgba(109, 158, 235, 0.15);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       animation: fadeIn 1s ease-in-out;
+      position: relative;
+      overflow: hidden;
+    }
+    .container::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(109, 158, 235, 0.05) 0%, transparent 70%);
+      z-index: -1;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(20px); }
@@ -51,16 +63,34 @@
       margin-bottom: 20px;
       color: #6d9eeb;
       text-shadow: 0 0 20px rgba(109,158,235,0.5);
+      animation: pulse 3s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
     }
     h1 {
       font-family: 'Poppins', sans-serif;
       font-size: 3rem;
-      font-weight: 800;
+      font-weight: 700;
       background: linear-gradient(90deg, #6d9eeb, #a084ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 20px;
       letter-spacing: 1px;
+      position: relative;
+      display: inline-block;
+    }
+    h1::after {
+      content: "";
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: linear-gradient(90deg, #6d9eeb, #a084ff);
+      border-radius: 2px;
     }
     .subtitle {
       font-size: 1.2rem;
@@ -69,6 +99,7 @@
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
+      font-weight: 300;
     }
     .benefits {
       margin: 30px 0;
@@ -76,13 +107,15 @@
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
+      padding-left: 20px;
     }
     .benefits li {
-      margin-bottom: 16px;
-      padding-left: 32px;
+      margin-bottom: 20px;
+      padding-left: 35px;
       position: relative;
       color: #ddd;
       font-size: 1.05rem;
+      line-height: 1.5;
     }
     .benefits li::before {
       content: "✨";
@@ -90,6 +123,10 @@
       left: 0;
       top: 0;
       font-size: 1.2rem;
+      transition: transform 0.3s ease;
+    }
+    .benefits li:hover::before {
+      transform: rotate(15deg) scale(1.2);
     }
     .cta {
       margin-top: 40px;
@@ -105,6 +142,23 @@
       text-decoration: none;
       transition: all 0.3s ease;
       box-shadow: 0 8px 20px rgba(88, 101, 242, 0.35);
+      position: relative;
+      overflow: hidden;
+      border: none;
+      cursor: pointer;
+    }
+    .btn::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+    .btn:hover::after {
+      left: 100%;
     }
     .btn:hover {
       transform: translateY(-4px);
@@ -115,6 +169,28 @@
       text-align: center;
       font-size: 0.9rem;
       color: #888;
+      margin-top: 20px;
+    }
+    .tagline {
+      font-style: italic;
+      margin-top: 10px;
+      color: #999;
+      font-size: 1rem;
+    }
+    @media (max-width: 768px) {
+      .container {
+        padding: 40px 20px;
+      }
+      h1 {
+        font-size: 2.2rem;
+      }
+      .subtitle {
+        font-size: 1rem;
+      }
+      .benefits li {
+        padding-left: 30px;
+        font-size: 0.95rem;
+      }
     }
   </style>
 </head>
@@ -124,9 +200,10 @@
       <div class="logo">🎙️</div>
       <h1>PulseHub</h1>
       <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
+      <p class="tagline">Where creativity meets connection</p>
 
       <ul class="benefits">
-        <li>Network with top creators & collab on projects</li>
+        <li>Network with top creators & collaborate on projects</li>
         <li>Get early access to tools, templates, and resources</li>
         <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
         <li>Safe space to share ideas, without the noise</li>
