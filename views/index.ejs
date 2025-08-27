@@ -11,10 +11,9 @@
       padding: 0;
       box-sizing: border-box;
     }
-
     body {
       font-family: 'Inter', sans-serif;
-      background: #0f111a;
+      background: radial-gradient(circle at top, #0f111a, #050508);
       color: #fff;
       min-height: 100vh;
       display: flex;
@@ -22,45 +21,48 @@
       align-items: center;
       padding: 20px;
       line-height: 1.7;
+      overflow-x: hidden;
     }
-
     .container {
       max-width: 900px;
       width: 100%;
       text-align: center;
-      padding: 50px 30px;
-      background: rgba(15, 17, 26, 0.8);
-      border-radius: 16px;
-      backdrop-filter: blur(10px);
-      border: 1px solid rgba(109, 158, 235, 0.2);
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+      padding: 60px 30px;
+      background: rgba(20, 22, 35, 0.75);
+      border-radius: 20px;
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(109, 158, 235, 0.15);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      animation: fadeIn 1s ease-in-out;
     }
-
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .logo {
       font-size: 4rem;
       margin-bottom: 20px;
       color: #6d9eeb;
+      text-shadow: 0 0 20px rgba(109,158,235,0.5);
     }
-
     h1 {
       font-family: 'Poppins', sans-serif;
-      font-size: 2.8rem;
+      font-size: 3rem;
       font-weight: 800;
       background: linear-gradient(90deg, #6d9eeb, #a084ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       margin-bottom: 20px;
+      letter-spacing: 1px;
     }
-
     .subtitle {
       font-size: 1.2rem;
-      color: #ccc;
+      color: #b5b5b5;
       margin-bottom: 30px;
       max-width: 600px;
       margin-left: auto;
       margin-right: auto;
     }
-
     .benefits {
       margin: 30px 0;
       text-align: left;
@@ -68,53 +70,48 @@
       margin-left: auto;
       margin-right: auto;
     }
-
     .benefits li {
       margin-bottom: 16px;
-      padding-left: 28px;
+      padding-left: 32px;
       position: relative;
       color: #ddd;
+      font-size: 1.05rem;
     }
-
     .benefits li::before {
       content: "✨";
       position: absolute;
       left: 0;
       top: 0;
+      font-size: 1.2rem;
     }
-
     .cta {
       margin-top: 40px;
     }
-
     .btn {
       display: inline-block;
-      padding: 14px 36px;
-      font-size: 1.1rem;
+      padding: 16px 40px;
+      font-size: 1.2rem;
       font-weight: 600;
       color: white;
       background: linear-gradient(90deg, #5865F2, #4c58d7);
-      border-radius: 8px;
+      border-radius: 12px;
       text-decoration: none;
       transition: all 0.3s ease;
-      box-shadow: 0 6px 16px rgba(88, 101, 242, 0.3);
+      box-shadow: 0 8px 20px rgba(88, 101, 242, 0.35);
     }
-
     .btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(88, 101, 242, 0.45);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 28px rgba(88, 101, 242, 0.5);
     }
-
     footer {
       margin-top: 50px;
       font-size: 0.9rem;
-      color: #777;
+      color: #888;
       text-align: center;
     }
   </style>
 </head>
 <body>
-
   <div class="container">
     <div class="logo">🎙️</div>
     <h1>PulseHub</h1>
@@ -135,6 +132,5 @@
   <footer>
     © 2025 PulseHub. Made for creators, by creators.
   </footer>
-
 </body>
 </html>
