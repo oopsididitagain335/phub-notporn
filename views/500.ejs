@@ -1,0 +1,58 @@
+<!-- views/500.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Error - PulseHub</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .error-container {
+      text-align: center;
+      padding: 2rem;
+      border-radius: 8px;
+      background: #3a0000;
+      border: 1px solid #550000;
+      margin: 1rem 0;
+    }
+    .error-code {
+      font-size: 3rem;
+      color: #ff4d4d;
+      margin: 0;
+    }
+    .error-message {
+      color: #fff;
+      margin: 1rem 0;
+    }
+    .error-details {
+      font-size: 0.9rem;
+      color: #ccc;
+      margin: 1rem 0;
+      font-style: italic;
+    }
+    .action-links {
+      margin: 1.5rem 0;
+    }
+    .action-links a {
+      margin: 0 10px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="error-container">
+      <h1 class="error-code">500</h1>
+      <p class="error-message">Internal Server Error</p>
+      <p class="error-details">
+        Something went wrong on our end. Our team has been notified.
+      </p>
+      
+      <div class="action-links">
+        <a href="/">← Back to Home</a>
+        <a href="/contact">Contact Support</a>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
