@@ -1,4 +1,5 @@
 // server.js
+
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -12,34 +13,46 @@ const User = require('./models/User');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
+// EJS Setup
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Session Store
 const sessionStore = MongoStore.create({
   mongoUrl: process.env.MONGO_URI,
   collection: 'sessions',
-  ttl: 86400
+  ttl: 86400 // 24 hours
 });
 
+// Session Config
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'supersecret',
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
-    cookie: { httpOnly: true, secure: false, maxAge: 86400000 }
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24
+    }
   })
 );
 
+// Authentication Middleware
 function requireAuth(req, res, next) {
-  if (!req.session.userId) return res.redirect('/login');
+  if (!req.session.userId) {
+    return res.redirect('/login');
+  }
   next();
 }
 
+// Ban Check Middleware
 async function checkBan(req, res, next) {
   if (req.session.userId) {
     try {
@@ -50,23 +63,30 @@ async function checkBan(req, res, next) {
       }
       if (user.isBanned) {
         req.session.destroy();
-        return res.render('ban', { banReason: user.banReason || 'Banned.' });
+        return res.status(403).send(`
+          <h1>🚫 You Are Banned</h1>
+          <p>${user.banReason || 'You have been banned from this service.'}</p>
+          <a href="/login">← Login</a>
+        `);
       }
       res.locals.user = user;
     } catch (err) {
-      return res.status(500).render('500', { message: 'Server error.' });
+      console.error('Ban check error:', err);
+      return res.status(500).send('<h1>❌ Server Error</h1><p>Please try again later.</p>');
     }
   }
   next();
 }
 
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB error:', err));
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('❌ MongoDB connection error:', err));
 
+// Generate Unique Link Code
 async function generateUniqueLinkCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code;
@@ -81,86 +101,120 @@ async function generateUniqueLinkCode() {
   return code;
 }
 
+// Routes
+
+// Home / Signup
 app.get('/', (req, res) => {
   res.render('signup', { error: null });
 });
 
+// Signup POST
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
-    return res.render('signup', { error: 'All fields required.' });
+    return res.render('signup', { error: 'All fields are required.' });
   }
 
-  const existing = await User.findOne({
-    $or: [
-      { username: new RegExp(`^${username}$`, 'i') },
-      { email: new RegExp(`^${email}$`, 'i') }
-    ]
-  });
+  try {
+    const existing = await User.findOne({
+      $or: [
+        { username: new RegExp(`^${username}$`, 'i') },
+        { email: new RegExp(`^${email}$`, 'i') }
+      ]
+    });
 
-  if (existing) {
-    return res.render('signup', { error: 'Username or email taken.' });
+    if (existing) {
+      return res.render('signup', { error: 'Username or email already taken.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    const linkCode = await generateUniqueLinkCode();
+
+    const user = await User.create({ username, email, passwordHash, linkCode });
+
+    req.session.userId = user._id;
+    req.session.user = { username: user.username, discordId: user.discordId };
+
+    res.redirect('/link');
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).send('<h1>❌ Server Error</h1><p>Please try again.</p>');
   }
-
-  const passwordHash = await bcrypt.hash(password, 12);
-  const linkCode = await generateUniqueLinkCode();
-
-  const user = await User.create({ username, email, passwordHash, linkCode });
-
-  req.session.userId = user._id;
-  req.session.user = { username: user.username, discordId: user.discordId };
-
-  res.redirect('/link');
 });
 
+// Login Page
 app.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
+// Login POST
 app.post('/login', async (req, res) => {
   const { usernameOrEmail, password } = req.body;
   if (!usernameOrEmail || !password) {
     return res.render('login', { error: 'All fields required.' });
   }
 
-  const user = await User.findOne({
-    $or: [
-      { username: new RegExp(`^${usernameOrEmail}$`, 'i') },
-      { email: new RegExp(`^${usernameOrEmail}$`, 'i') }
-    ]
-  });
+  try {
+    const user = await User.findOne({
+      $or: [
+        { username: new RegExp(`^${usernameOrEmail}$`, 'i') },
+        { email: new RegExp(`^${usernameOrEmail}$`, 'i') }
+      ]
+    });
 
-  if (!user || !await bcrypt.compare(password, user.passwordHash)) {
-    return res.render('login', { error: 'Invalid credentials.' });
+    if (!user || !await bcrypt.compare(password, user.passwordHash)) {
+      return res.render('login', { error: 'Invalid credentials.' });
+    }
+
+    if (user.isBanned) {
+      return res.status(403).send(`
+        <h1>🚫 Banned</h1>
+        <p>${user.banReason || 'You have been banned.'}</p>
+        <a href="/login">Try Again</a>
+      `);
+    }
+
+    req.session.userId = user._id;
+    req.session.user = { username: user.username, discordId: user.discordId };
+
+    res.redirect(user.discordId ? '/home' : '/link');
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).send('<h1>❌ Server Error</h1><p>Please try again.</p>');
   }
-
-  if (user.isBanned) {
-    return res.render('ban', { banReason: user.banReason });
-  }
-
-  req.session.userId = user._id;
-  req.session.user = { username: user.username, discordId: user.discordId };
-
-  res.redirect(user.discordId ? '/home' : '/link');
 });
 
-app.get('/link', requireAuth, checkBan, (req, res) => {
+// Link Page
+app.get('/link', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
   if (user.discordId) return res.redirect('/home');
 
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S'
+    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ No trailing spaces
   });
 });
 
-app.get('/home', requireAuth, checkBan, (req, res) => {
+// Home Page (After linking)
+app.get('/home', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
   if (!user.discordId) return res.redirect('/link');
-  res.render('home', { user });
+
+  try {
+    const totalUsers = await User.countDocuments();
+
+    res.render('home', {
+      user,
+      totalUsers
+    });
+  } catch (err) {
+    console.error('Home error:', err);
+    res.status(500).send('<h1>❌ Failed to load home</h1><a href="/link">Try Again</a>');
+  }
 });
 
+// Logout
 app.post('/logout', requireAuth, (req, res) => {
   req.session.destroy(() => {
     res.clearCookie('connect.sid');
@@ -168,17 +222,34 @@ app.post('/logout', requireAuth, (req, res) => {
   });
 });
 
+// 404 Handler
 app.use((req, res) => {
-  res.status(404).render('404', { message: 'Not found.' });
+  res.status(404).send(`
+    <h1>🔍 Page Not Found</h1>
+    <p>The page you're looking for doesn't exist.</p>
+    <a href="/">← Home</a>
+  `);
 });
 
+// 500 Handler (No EJS needed)
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).render('500', { message: 'Server error.' });
+  console.error('Unhandled error:', err);
+  res.status(500).send(`
+    <h1>❌ Server Error</h1>
+    <p>An unexpected error occurred.</p>
+    <small>Check logs for details.</small>
+  `);
 });
 
-startBot().catch(err => console.error('❌ Bot failed:', err));
+// Start Discord Bot
+startBot().catch(err => {
+  console.error('❌ Failed to start bot:', err);
+});
 
+// Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`👉 Open http://localhost:${PORT}`);
+  }
 });
