@@ -4,8 +4,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>PulseHub - Coming Soon</title>
+  <title>PulseHub | For Creators, by Creators</title>
+
+  <!-- Google Fonts: Inter (clean) + Poppins (bold titles) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@700;800&display=swap" rel="stylesheet">
+
   <style>
+    /* Reset & Base */
     * {
       margin: 0;
       padding: 0;
@@ -14,45 +19,90 @@
 
     body {
       font-family: 'Inter', 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #121424, #1a2238);
+      background: linear-gradient(135deg, #0f111a, #1a1f35);
       color: #ffffff;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       padding: 20px;
-      text-align: center;
+      line-height: 1.7;
     }
 
     .container {
-      max-width: 600px;
-      padding: 50px 30px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 16px;
+      max-width: 720px;
+      width: 100%;
+      padding: 55px 35px;
+      text-align: center;
+      background: rgba(30, 35, 60, 0.15);
+      border-radius: 20px;
       backdrop-filter: blur(10px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(109, 158, 235, 0.2);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Logo & Title */
+    .logo {
+      font-size: 3.8rem;
+      margin-bottom: 16px;
+      color: #6d9eeb;
     }
 
     h1 {
-      font-size: 2.8rem;
-      margin-bottom: 16px;
+      font-family: 'Poppins', sans-serif;
+      font-size: 2.9rem;
+      font-weight: 800;
       background: linear-gradient(90deg, #6d9eeb, #a084ff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+      margin-bottom: 16px;
     }
 
-    p {
-      font-size: 1.1rem;
-      color: #cccccc;
-      line-height: 1.7;
-      margin-bottom: 20px;
+    .subtitle {
+      font-size: 1.25rem;
+      color: #ccc;
+      max-width: 600px;
+      margin: 0 auto 30px;
+    }
+
+    /* Creator Benefits */
+    .benefits {
+      margin: 30px auto;
+      max-width: 600px;
+      text-align: left;
+      color: #ddd;
+      font-size: 1rem;
+      padding: 0 10px;
+    }
+
+    .benefits ul {
+      list-style: none;
+      margin-top: 12px;
+    }
+
+    .benefits li {
+      margin-bottom: 12px;
+      padding-left: 28px;
+      position: relative;
+    }
+
+    .benefits li::before {
+      content: "✨";
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    /* Status Section */
+    .status {
+      margin: 30px 0;
     }
 
     .status h2 {
-      font-size: 1.8rem;
-      margin-bottom: 12px;
+      font-size: 1.9rem;
+      font-weight: 700;
+      margin-bottom: 10px;
     }
 
     .coming-soon {
@@ -63,22 +113,25 @@
       color: #00ff9d;
     }
 
+    /* Progress Bar */
     .progress-section {
-      margin: 25px auto;
-      max-width: 400px;
+      margin: 30px auto;
+      max-width: 500px;
+      color: #ddd;
     }
 
-    .progress-section p {
+    .progress-label {
       font-size: 1rem;
-      color: #ddd;
       margin-bottom: 10px;
+      display: block;
     }
 
     .progress-bar-outer {
       height: 14px;
-      background: #333;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 7px;
       overflow: hidden;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
     }
 
     .progress-bar-inner {
@@ -89,64 +142,107 @@
       transition: width 0.4s ease;
     }
 
+    .progress-count {
+      margin-top: 8px;
+      font-size: 0.95rem;
+      color: #aaa;
+    }
+
+    /* CTA Button */
     .cta {
-      margin-top: 30px;
+      margin-top: 35px;
     }
 
     .btn {
       display: inline-block;
-      padding: 14px 32px;
-      font-size: 1.1rem;
+      padding: 15px 36px;
+      font-size: 1.15rem;
       font-weight: 600;
-      color: #ffffff;
-      background: #5865F2;
-      border-radius: 8px;
+      color: white;
+      background: linear-gradient(90deg, #5865F2, #4c58d7);
+      border-radius: 10px;
       text-decoration: none;
-      transition: background 0.3s ease, transform 0.2s ease;
+      transition: all 0.3s ease;
+      box-shadow: 0 6px 16px rgba(88, 101, 242, 0.3);
     }
 
     .btn:hover {
-      background: #4c58d7;
-      transform: translateY(-2px);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(88, 101, 242, 0.45);
+      background: linear-gradient(90deg, #505ce7, #4450c9);
     }
 
+    .btn:active {
+      transform: translateY(0);
+    }
+
+    /* Footer */
     footer {
-      margin-top: 40px;
+      margin-top: 50px;
       font-size: 0.9rem;
-      color: #888;
+      color: #777;
+    }
+
+    footer a {
+      color: #6d9eeb;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
     }
   </style>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-  <div class="container">
-    <h1>✨ PulseHub</h1>
-    <p>Your gateway to a vibrant online community for creators and innovators.</p>
 
+  <div class="container">
+    <!-- Logo -->
+    <div class="logo">🎙️</div>
+
+    <!-- Headline -->
+    <h1>PulseHub</h1>
+    <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
+
+    <!-- Creator Benefits -->
+    <div class="benefits">
+      <ul>
+        <li>Network with top creators & collab on projects</li>
+        <li>Get early access to tools, templates, and resources</li>
+        <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
+        <li>Safe space to share ideas, without the noise</li>
+      </ul>
+    </div>
+
+    <!-- Dynamic Status -->
     <div class="status">
       <% if (totalUsers >= 50) { %>
         <h2 class="loading">🚀 Loading... We're live!</h2>
-        <p>You're in! PulseHub is now launching for early members.</p>
+        <p style="color:#aaa;">Welcome to the future of creator collaboration. Sign up to unlock access.</p>
       <% } else { %>
-        <h2 class="coming-soon">🎉 Coming Soon</h2>
-        <p>Be one of the first 50 to join and unlock exclusive access.</p>
+        <h2 class="coming-soon">🎯 Coming Soon – Join the Waitlist</h2>
+        <p style="color:#aaa;">Be one of the first 50 creators. Limited spots for launch.</p>
       <% } %>
     </div>
 
+    <!-- Progress Tracker -->
     <div class="progress-section">
-      <p><strong>Early Access Progress:</strong> <%= totalUsers %>/50 members</p>
+      <span class="progress-label">Early Access Signups</span>
       <div class="progress-bar-outer">
         <div class="progress-bar-inner"></div>
       </div>
+      <div class="progress-count"><strong><%= totalUsers %></strong>/50 creators registered</div>
     </div>
 
+    <!-- Call to Action -->
     <div class="cta">
-      <a href="/signup" class="btn">📝 Join the Waitlist</a>
+      <a href="/signup" class="btn">➕ Join the Creator Waitlist</a>
     </div>
   </div>
 
+  <!-- Footer -->
   <footer>
-    &copy; 2025 PulseHub. All rights reserved.
+    &copy; 2025 PulseHub. Made <strong>for creators</strong>, by creators.
   </footer>
+
 </body>
 </html>
