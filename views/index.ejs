@@ -17,11 +17,18 @@
       color: #fff;
       min-height: 100vh;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      justify-content: space-between;
       align-items: center;
       padding: 20px;
       line-height: 1.7;
-      overflow-x: hidden;
+    }
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
     }
     .container {
       max-width: 900px;
@@ -104,33 +111,35 @@
       box-shadow: 0 12px 28px rgba(88, 101, 242, 0.5);
     }
     footer {
-      margin-top: 50px;
+      padding: 20px;
+      text-align: center;
       font-size: 0.9rem;
       color: #888;
-      text-align: center;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">🎙️</div>
-    <h1>PulseHub</h1>
-    <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
+  <main>
+    <div class="container">
+      <div class="logo">🎙️</div>
+      <h1>PulseHub</h1>
+      <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
 
-    <ul class="benefits">
-      <li>Network with top creators & collab on projects</li>
-      <li>Get early access to tools, templates, and resources</li>
-      <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
-      <li>Safe space to share ideas, without the noise</li>
-    </ul>
+      <ul class="benefits">
+        <li>Network with top creators & collab on projects</li>
+        <li>Get early access to tools, templates, and resources</li>
+        <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
+        <li>Safe space to share ideas, without the noise</li>
+      </ul>
 
-    <div class="cta">
-      <a href="/signup" class="btn">➕ Join the Waitlist</a>
+      <div class="cta">
+        <a href="/signup" class="btn">➕ Join the Waitlist</a>
+      </div>
     </div>
-  </div>
+  </main>
 
   <footer>
-    © 2025 PulseHub. Made for creators, by creators.
+    © 2025 PulseHub. All rights reserved. Made for creators, by creators.
   </footer>
 </body>
 </html>
