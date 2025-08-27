@@ -38,7 +38,7 @@
       line-height: 1.6;
     }
     .footer {
-      margin-top: 30px;
+      margin-top: 20px;
       font-size: 0.9em;
       color: #aaa;
     }
@@ -52,12 +52,15 @@
 
     <div class="instructions">
       <ol>
-        <li>Join our Discord server: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
+        <li>
+          <strong>Join our Discord server:</strong>
+          <a href="<%= inviteUrl %>" target="_blank" style="color:#00d1b2;">discord.gg/MmDs5ees4S</a>
+        </li>
         <li>Type this command in any channel:</li>
       </ol>
     </div>
 
-    <!-- ✅ Show only the raw command: /link ABC123XY -->
+    <!-- ✅ Show clean command: /link ABC123XY -->
     <div class="code-display">
       <code>/link <%= linkCode %></code>
     </div>
@@ -65,17 +68,22 @@
     <button onclick="copyCode()">📋 Copy Command</button>
     <button onclick="checkLink()">✅ I've Linked — Check Status</button>
 
-    <p class="footer">
-      This code can only be used once. After linking, it will be permanently disabled.
-    </p>
+    <div class="footer">
+      <p>
+        ⚠️ If the Discord link shows a blank page or "JavaScript" error, try opening it in an incognito tab or different browser.
+      </p>
+      <p>
+        This code can only be used once. After linking, it will be permanently disabled.
+      </p>
+    </div>
   </div>
 
   <script>
-    // ✅ Copy only the code or full command without "code:"
+    // ✅ Copy only the clean command: /link ABC123XY
     function copyCode() {
       const command = '/link <%= linkCode %>'; // e.g., /link K7M2X9LP
       navigator.clipboard.writeText(command).then(() => {
-        alert('Copied! Paste it in Discord.');
+        alert('Command copied! Paste it in Discord.');
       }).catch(err => {
         console.error('Copy failed:', err);
         alert('Copy failed. Please copy manually.');
