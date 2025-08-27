@@ -1,14 +1,15 @@
 // commands/link.js
+
 const { SlashCommandBuilder } = require('discord.js');
 
 module.exports = {
-   new SlashCommandBuilder()
+  data: new SlashCommandBuilder() // ✅ Added 'data:'
     .setName('link')
-    .setDescription('Link your PulseHub account')
+    .setDescription('Link your PulseHub account using your 8-character code')
     .addStringOption(option =>
       option
         .setName('code')
-        .setDescription('Your 8-character link code')
+        .setDescription('Your 8-character link code (e.g., K7M2X9LP)')
         .setRequired(true)
         .setMinLength(8)
         .setMaxLength(8)
