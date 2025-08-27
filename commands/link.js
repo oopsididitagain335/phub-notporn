@@ -9,34 +9,38 @@ module.exports = {
     .addStringOption((option) =>
       option
         .setName('code')
-        .setDescription('Your 8-character link code (e.g., K7M2X9LP)')
+        .setDescription('Enter your 8-character link code (e.g., ABC123XY)')
         .setRequired(true)
+        .setMinLength(8)
+        .setMaxLength(8)
     ),
 
   async execute(interaction) {
+    // Prevent duplicate replies
     if (interaction.replied || interaction.deferred) {
-      console.warn('Interaction already handled:', interaction.id);
+      console.warn('[Link] Interaction already handled:', interaction.id);
       return;
     }
 
+    // Defer immediately
     let deferred = false;
     try {
       await interaction.deferReply({ ephemeral: true });
       deferred = true;
     } catch (err) {
-      console.error('Failed to defer reply:', err);
+      console.error('[Link] Failed to defer reply:', err.message);
       return;
     }
 
-    // Clean and validate input
+    // Extract and sanitize code
     const rawCode = interaction.options.getString('code');
     const code = rawCode.trim().toUpperCase();
 
-    // ✅ Strict 8-character validation
+    // Validate format: exactly 8 alphanumeric uppercase chars
     const validFormat = /^[A-Z0-9]{8}$/;
     if (!validFormat.test(code)) {
       return await interaction.editReply({
-        content: `❌ Invalid format. Code must be **8 uppercase letters/numbers**.\n\nYou entered: \`${code}\`\n\nExample: \`K7M2X9LP\``,
+        content: `❌ Invalid code format.\n\n🔹 Got: \`${code}\`\n🔹 Expected: 8 letters/numbers (e.g., \`K7M2X9LP\`)\n\nMake sure you copied it correctly from the website.`,
       });
     }
 
@@ -44,33 +48,36 @@ module.exports = {
       const User = require('../models/User');
       const dbUser = await User.findOne({ linkCode: code });
 
+      // Case 1: No user found with this code
       if (!dbUser) {
         return await interaction.editReply({
-          content: `❌ No account found with that code. Double-check it or generate a new one on the website.`,
+          content: `❌ No account found with that code.\n\n➡️ Double-check the code on the [PulseHub Link Page](http://localhost:3000/link).\n➡️ Codes expire after use or re-login.`,
         });
       }
 
+      // Case 2: Already linked
       if (dbUser.discordId) {
         return await interaction.editReply({
-          content: `⚠️ This code has already been used and linked to a Discord account.`,
+          content: `⚠️ This code has already been used.\n\nIf this is your account, contact support for help.`,
         });
       }
 
-      // ✅ Link account
+      // Case 3: Success — link account
       dbUser.discordId = interaction.user.id;
-      dbUser.linkCode = null; // invalidate code after use
+      dbUser.linkCode = null; // invalidate for security
       await dbUser.save();
 
-      console.log(`✅ Successfully linked: ${dbUser.username} → ${interaction.user.tag}`);
+      console.log(`✅ Linked: ${dbUser.username} (${dbUser._id}) → ${interaction.user.tag}`);
 
       return await interaction.editReply({
-        content: `✅ Success! Your PulseHub account (\`${dbUser.username}\`) is now linked to Discord.\n\nYou can now access the full website.`,
+        content: `✅ Success!\n\nYour PulseHub account **${dbUser.username}** is now linked to Discord.\n\nYou can now access all features on the website.`,
       });
     } catch (err) {
-      console.error('Error in /link command:', err);
+      console.error('[Link] Database error:', err);
+
       if (deferred && !interaction.replied) {
         await interaction.editReply({
-          content: '❌ A database error occurred. Please try again or contact support.',
+          content: '❌ A server error occurred. Please try again or contact support.',
         }).catch(console.error);
       }
     }
