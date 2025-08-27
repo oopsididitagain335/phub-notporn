@@ -28,14 +28,15 @@ const UserSchema = new mongoose.Schema({
   linkCode: {
     type: String,
     default: null,
-    unique: true,
-    sparse: true
+    // ✅ Removed unique: true to allow multiple nulls
+    // We handle uniqueness in code with generateUniqueLinkCode()
+    index: true // Optional: for faster lookup when validating codes
   },
   discordId: {
     type: String,
     default: null,
     unique: true,
-    sparse: true, // ✅ This is critical!
+    sparse: true, // ✅ Only one Discord ID per user
     index: true
   },
   isBanned: {
