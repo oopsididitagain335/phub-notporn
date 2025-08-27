@@ -31,28 +31,8 @@ for (const file of commandFiles) {
 }
 
 // Ready event
-client.once('clientReady', async () => {
+client.once('ready', () => { // ← Use 'ready', not 'clientReady'
   console.log(`🤖 ${client.user.tag} is ready!`);
-
-  // ✅ Use REST and Routes from discord.js
-  const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
-
-  const clientId = process.env.DISCORD_CLIENT_ID;
-  const guildId = '1410014241896927412'; // Your server ID
-
-  try {
-    console.log(`🔁 Deploying ${client.commands.size} commands to guild ${guildId}...`);
-
-    // ✅ This will now work
-    await rest.put(
-      Routes.applicationGuildCommands(clientId, guildId),
-      { body: [...client.commands.values()].map(cmd => cmd.data.toJSON()) }
-    );
-
-    console.log('✅ Commands deployed successfully!');
-  } catch (err) {
-    console.error('❌ Command deploy failed:', err);
-  }
 });
 
 // Interaction handler
@@ -94,12 +74,11 @@ client.on('guildBanAdd', async (ban) => {
       return;
     }
 
-    // ✅ Use audit log type 22 = MEMBER_BAN_ADD
     let reason = 'No reason provided';
     try {
       const audit = await guild.fetchAuditLogs({
         limit: 1,
-        type: 22 // ← Correct number, not string
+        type: 22 // MEMBER_BAN_ADD
       });
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
@@ -119,12 +98,13 @@ client.on('guildBanAdd', async (ban) => {
   }
 });
 
-// Start bot
+// ✅ Proper startBot function
 function startBot() {
   if (!process.env.BOT_TOKEN) {
     throw new Error('❌ BOT_TOKEN is missing in .env');
   }
-  client.login(process.env.BOT_TOKEN).catch(console.error);
+  return client.login(process.env.BOT_TOKEN); // ← Return the Promise!
 }
 
+// ✅ Export both
 module.exports = { startBot, client };
