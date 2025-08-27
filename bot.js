@@ -1,5 +1,4 @@
 // bot.js
-
 const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
@@ -14,28 +13,24 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load commands
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
   const command = require(filePath);
-
   if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
     console.log(`✅ Loaded command: ${command.data.name}`);
   } else {
-    console.warn(`❌ [WARNING] Invalid command at ${filePath}`);
+    console.warn(`❌ Invalid command at ${filePath}`);
   }
 }
 
-// Ready event
-client.once('ready', () => { // ← Use 'ready', not 'clientReady'
+client.once('ready', () => {
   console.log(`🤖 ${client.user.tag} is ready!`);
 });
 
-// Interaction handler
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -54,38 +49,30 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// Guild ban handler
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
     const guild = ban.guild;
-
-    if (!user || !guild) {
-      return console.warn('⚠️ Missing user or guild in ban event');
-    }
+    if (!user || !guild) return console.warn('⚠️ Missing user or guild');
 
     console.log(`🚫 ${user.tag} was banned from ${guild.name}`);
-
     const User = require('./models/User');
     const dbUser = await User.findOne({ discordId: user.id });
 
     if (!dbUser) {
-      console.log(`ℹ️ No PulseHub account linked for ${user.tag}`);
+      console.log(`ℹ️ No PulseHub account for ${user.tag}`);
       return;
     }
 
     let reason = 'No reason provided';
     try {
-      const audit = await guild.fetchAuditLogs({
-        limit: 1,
-        type: 22 // MEMBER_BAN_ADD
-      });
+      const audit = await guild.fetchAuditLogs({ limit: 1, type: 22 });
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
         reason = log.reason || reason;
       }
-    } catch (auditErr) {
-      console.warn('Failed to fetch audit log:', auditErr.message);
+    } catch (err) {
+      console.warn('Audit log fetch failed:', err.message);
     }
 
     dbUser.isBanned = true;
@@ -98,13 +85,11 @@ client.on('guildBanAdd', async (ban) => {
   }
 });
 
-// ✅ Proper startBot function
 function startBot() {
   if (!process.env.BOT_TOKEN) {
-    throw new Error('❌ BOT_TOKEN is missing in .env');
+    throw new Error('❌ BOT_TOKEN is missing');
   }
-  return client.login(process.env.BOT_TOKEN); // ← Return the Promise!
+  return client.login(process.env.BOT_TOKEN);
 }
 
-// ✅ Export both
 module.exports = { startBot, client };
