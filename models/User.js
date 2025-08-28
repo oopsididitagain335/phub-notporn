@@ -27,15 +27,18 @@ const UserSchema = new mongoose.Schema({
   linkCode: {
     type: String,
     default: null,
+    // Only enforces uniqueness if value exists (not null)
     unique: true,
-    sparse: true,  // ✅ Allows multiple users with linkCode: null
+    sparse: true,
+    // Optional: faster lookups when validating codes
     index: true
   },
   discordId: {
     type: String,
     default: null,
+    // Only one Discord ID per user, but many can be unlinked
     unique: true,
-    sparse: true,  // ✅ Allows multiple users with discordId: null
+    sparse: true,
     index: true
   },
   isBanned: {
@@ -51,5 +54,8 @@ const UserSchema = new mongoose.Schema({
     default: Date.now
   }
 });
+
+// 🔁 This model definition tells Mongoose to create sparse indexes
+// But you still need to drop old indexes once (see server.js fix)
 
 module.exports = mongoose.model('User', UserSchema);
