@@ -1,5 +1,4 @@
 // server.js
-
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -25,26 +24,35 @@ app.set('views', path.join(__dirname, 'views'));
 // Session Store
 const sessionStore = MongoStore.create({
   mongoUrl: process.env.MONGO_URI,
-  collection: 'sessions',
+  collectionName: 'sessions',
   ttl: 86400 // 24 hours
 });
 
 // Session Config
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'supersecret',
+    secret: process.env.SESSION_SECRET || 'supersecret_dev_secret_change_in_prod',
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24
+      maxAge: 1000 * 60 * 60 * 24 // 24h
     }
   })
 );
 
-// Authentication Middleware
+// Global Error Logging
+process.on('unhandledRejection', (err) => {
+  console.error('🚨 Unhandled Rejection:', err.message || err);
+});
+process.on('uncaughtException', (err) => {
+  console.error('🚨 Uncaught Exception:', err.message || err);
+  process.exit(1);
+});
+
+// Auth Middleware
 function requireAuth(req, res, next) {
   if (!req.session.userId) {
     return res.redirect('/login');
@@ -59,7 +67,7 @@ async function checkBan(req, res, next) {
       const user = await User.findById(req.session.userId);
       if (!user) {
         req.session.destroy();
-        return res.redirect('/');
+        return res.redirect('/login');
       }
       if (user.isBanned) {
         req.session.destroy();
@@ -81,10 +89,14 @@ async function checkBan(req, res, next) {
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true
+  useUnifiedTopology: true,
+  serverSelectionTimeoutMS: 5000
 })
-  .then(() => console.log('✅ MongoDB connected'))
-  .catch(err => console.error('❌ MongoDB connection error:', err));
+.then(() => console.log('✅ MongoDB connected'))
+.catch(err => {
+  console.error('❌ MongoDB connection error:', err.message || err);
+  process.exit(1);
+});
 
 // Generate Unique Link Code
 async function generateUniqueLinkCode() {
@@ -103,7 +115,6 @@ async function generateUniqueLinkCode() {
 
 // Routes
 
-// Home / Landing Page
 app.get('/', async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
@@ -114,12 +125,10 @@ app.get('/', async (req, res) => {
   }
 });
 
-// Signup Page
 app.get('/signup', (req, res) => {
   res.render('signup', { error: null });
 });
 
-// Signup POST
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
@@ -149,16 +158,14 @@ app.post('/signup', async (req, res) => {
     res.redirect('/link');
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).send('<h1>❌ Server Error</h1><p>Please try again.</p>');
+    res.status(500).send('<h1>❌ Server Error</h1><p>Failed to create account. Try again.</p>');
   }
 });
 
-// Login Page
 app.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
-// Login POST
 app.post('/login', async (req, res) => {
   const { usernameOrEmail, password } = req.body;
   if (!usernameOrEmail || !password) {
@@ -173,7 +180,7 @@ app.post('/login', async (req, res) => {
       ]
     });
 
-    if (!user || !await bcrypt.compare(password, user.passwordHash)) {
+    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.render('login', { error: 'Invalid credentials.' });
     }
 
@@ -195,7 +202,6 @@ app.post('/login', async (req, res) => {
   }
 });
 
-// Link Page
 app.get('/link', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
   if (user.discordId) return res.redirect('/home');
@@ -203,29 +209,23 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ Clean invite
+    inviteUrl: 'https://discord.gg/MmDs5ees4S'
   });
 });
 
-// Home Page (After linking)
 app.get('/home', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
   if (!user.discordId) return res.redirect('/link');
 
   try {
     const totalUsers = await User.countDocuments();
-
-    res.render('home', {
-      user,
-      totalUsers
-    });
+    res.render('home', { user, totalUsers });
   } catch (err) {
     console.error('Home error:', err);
     res.status(500).send('<h1>❌ Failed to load home</h1><a href="/link">Try Again</a>');
   }
 });
 
-// Logout
 app.post('/logout', requireAuth, (req, res) => {
   req.session.destroy(() => {
     res.clearCookie('connect.sid');
@@ -235,11 +235,7 @@ app.post('/logout', requireAuth, (req, res) => {
 
 // 404 Handler
 app.use((req, res) => {
-  res.status(404).send(`
-    <h1>🔍 Page Not Found</h1>
-    <p>The page you're looking for doesn't exist.</p>
-    <a href="/">← Home</a>
-  `);
+  res.status(404).render('404', { message: 'Page not found.' });
 });
 
 // 500 Handler
@@ -248,7 +244,7 @@ app.use((err, req, res, next) => {
   res.status(500).send(`
     <h1>❌ Server Error</h1>
     <p>An unexpected error occurred.</p>
-    <small>Check logs for details.</small>
+    <pre>${err.message}</pre>
   `);
 });
 
