@@ -43,20 +43,18 @@ app.use(
   })
 );
 
-// Global Error Logging
+// Global Error Handlers
 process.on('unhandledRejection', (err) => {
-  console.error('🚨 Unhandled Rejection:', err.message || err);
+  console.error('🚨 Unhandled Rejection:', err);
 });
 process.on('uncaughtException', (err) => {
-  console.error('🚨 Uncaught Exception:', err.message || err);
+  console.error('🚨 Uncaught Exception:', err);
   process.exit(1);
 });
 
 // Auth Middleware
 function requireAuth(req, res, next) {
-  if (!req.session.userId) {
-    return res.redirect('/login');
-  }
+  if (!req.session.userId) return res.redirect('/login');
   next();
 }
 
@@ -66,11 +64,11 @@ async function checkBan(req, res, next) {
     try {
       const user = await User.findById(req.session.userId);
       if (!user) {
-        req.session.destroy();
+        req.session.destroy(() => {});
         return res.redirect('/login');
       }
       if (user.isBanned) {
-        req.session.destroy();
+        req.session.destroy(() => {});
         return res.status(403).send(`
           <h1>🚫 You Are Banned</h1>
           <p>${user.banReason || 'You have been banned from this service.'}</p>
@@ -101,13 +99,9 @@ mongoose.connect(process.env.MONGO_URI, {
 // Generate Unique Link Code
 async function generateUniqueLinkCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code;
-  let exists;
+  let code, exists;
   do {
-    code = '';
-    for (let i = 0; i < 8; i++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
+    code = Array(8).fill(null).map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
     exists = await User.findOne({ linkCode: code });
   } while (exists);
   return code;
@@ -138,8 +132,8 @@ app.post('/signup', async (req, res) => {
   try {
     const existing = await User.findOne({
       $or: [
-        { username: new RegExp(`^${username}$`, 'i') },
-        { email: new RegExp(`^${email}$`, 'i') }
+        { username: new RegExp(`^${username.trim()}$`, 'i') },
+        { email: new RegExp(`^${email.trim()}$`, 'i') }
       ]
     });
 
@@ -150,15 +144,24 @@ app.post('/signup', async (req, res) => {
     const passwordHash = await bcrypt.hash(password, 12);
     const linkCode = await generateUniqueLinkCode();
 
-    const user = await User.create({ username, email, passwordHash, linkCode });
+    const user = await User.create({
+      username: username.trim(),
+      email: email.trim(),
+      passwordHash,
+      linkCode
+    });
 
     req.session.userId = user._id;
     req.session.user = { username: user.username, discordId: user.discordId };
 
     res.redirect('/link');
   } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).send('<h1>❌ Server Error</h1><p>Failed to create account. Try again.</p>');
+    console.error('Signup error:', err); // This will show the real issue
+    res.status(500).send(`
+      <h1>❌ Server Error</h1>
+      <p>Failed to create account. Check logs.</p>
+      <pre>${err.message}</pre>
+    `);
   }
 });
 
@@ -175,8 +178,8 @@ app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({
       $or: [
-        { username: new RegExp(`^${usernameOrEmail}$`, 'i') },
-        { email: new RegExp(`^${usernameOrEmail}$`, 'i') }
+        { username: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') },
+        { email: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') }
       ]
     });
 
@@ -209,7 +212,7 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S'
+    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ Fixed: no extra spaces
   });
 });
 
@@ -235,7 +238,11 @@ app.post('/logout', requireAuth, (req, res) => {
 
 // 404 Handler
 app.use((req, res) => {
-  res.status(404).render('404', { message: 'Page not found.' });
+  res.status(404).send(`
+    <h1>🔍 Page Not Found</h1>
+    <p>The page you're looking for doesn't exist.</p>
+    <a href="/">← Home</a>
+  `);
 });
 
 // 500 Handler
