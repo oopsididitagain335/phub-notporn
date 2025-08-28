@@ -5,6 +5,22 @@
   <title>Link Account</title>
   <link rel="stylesheet" href="/style.css">
   <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      color: #eee;
+      text-align: center;
+      padding: 40px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #252525;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    h1 { color: #00d1b2; }
     .code-display {
       background: #2d2d2d;
       color: #00d1b2;
@@ -31,6 +47,8 @@
       font-size: 0.9em;
       color: #aaa;
     }
+    a { color: #00d1b2; text-decoration: none; }
+    a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -38,8 +56,8 @@
     <h1>🔗 Link Your Discord Account</h1>
     <p>Hello, <strong><%= username %></strong>!</p>
 
-    <ol>
-      <li>Join: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
+    <ol style="text-align: left; margin: 20px 0;">
+      <li>Join our server: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
       <li>Type in Discord:</li>
     </ol>
 
@@ -51,18 +69,20 @@
     <button onclick="check()">✅ Done</button>
 
     <div class="footer">
-      ⚠️ If you see "JavaScript" error, try incognito.<br>
-      Code works only once.
+      ⚠️ If you see "JavaScript" error, try incognito mode.<br>
+      This code works only once.
     </div>
   </div>
 
   <script>
     function copy() {
       navigator.clipboard.writeText('/link <%= linkCode %>')
-        .then(() => alert('Copied!'))
-        .catch(() => alert('Copy failed.'));
+        .then(() => alert('✅ Copied!'))
+        .catch(err => alert('❌ Copy failed: ' + err));
     }
-    function check() { window.location.reload(); }
+    function check() {
+      window.location.reload();
+    }
   </script>
 </body>
 </html>
