@@ -1,5 +1,5 @@
 // bot.js
-const { Client, Collection, GatewayIntentBits, REST, Routes } = require('discord.js');
+const { Client, Collection, GatewayIntentBits } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -7,12 +7,14 @@ require('dotenv').config();
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildBans
+    GatewayIntentBits.GuildBans,
+    GatewayIntentBits.DirectMessages // Optional: if you want to log DMs
   ]
 });
 
 client.commands = new Collection();
 
+// Load commands from /commands folder
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -27,10 +29,12 @@ for (const file of commandFiles) {
   }
 }
 
+// Ready event
 client.once('ready', () => {
   console.log(`🤖 ${client.user.tag} is ready!`);
 });
 
+// Interaction handler (slash commands)
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -49,6 +53,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
+// Sync bans from Discord to your database
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
@@ -66,7 +71,7 @@ client.on('guildBanAdd', async (ban) => {
 
     let reason = 'No reason provided';
     try {
-      const audit = await guild.fetchAuditLogs({ limit: 1, type: 22 });
+      const audit = await guild.fetchAuditLogs({ limit: 1, type: 22 }); // 22 = MEMBER_BAN_ADD
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
         reason = log.reason || reason;
@@ -85,9 +90,10 @@ client.on('guildBanAdd', async (ban) => {
   }
 });
 
+// Start the bot
 function startBot() {
   if (!process.env.BOT_TOKEN) {
-    throw new Error('❌ BOT_TOKEN is missing');
+    throw new Error('❌ BOT_TOKEN is missing in .env');
   }
   return client.login(process.env.BOT_TOKEN);
 }
