@@ -90,7 +90,24 @@ mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000
 })
-.then(() => console.log('✅ MongoDB connected'))
+.then(async () => {
+  console.log('✅ MongoDB connected');
+
+  // Recreate sparse indexes to fix E11000 errors
+  try {
+    const User = require('./models/User');
+
+    await User.collection.dropIndex('discordId_1').catch(() => {});
+    await User.collection.dropIndex('linkCode_1').catch(() => {});
+
+    await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
+    await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
+
+    console.log('✅ Sparse unique indexes applied: discordId_1, linkCode_1');
+  } catch (err) {
+    console.error('❌ Index recreation failed:', err);
+  }
+})
 .catch(err => {
   console.error('❌ MongoDB connection error:', err.message || err);
   process.exit(1);
@@ -101,7 +118,9 @@ async function generateUniqueLinkCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code, exists;
   do {
-    code = Array(8).fill(null).map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
+    code = Array(8).fill(null)
+      .map(() => chars[Math.floor(Math.random() * chars.length)])
+      .join('');
     exists = await User.findOne({ linkCode: code });
   } while (exists);
   return code;
@@ -156,7 +175,7 @@ app.post('/signup', async (req, res) => {
 
     res.redirect('/link');
   } catch (err) {
-    console.error('Signup error:', err); // This will show the real issue
+    console.error('Signup error:', err);
     res.status(500).send(`
       <h1>❌ Server Error</h1>
       <p>Failed to create account. Check logs.</p>
@@ -212,7 +231,7 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ Fixed: no extra spaces
+    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ Clean
   });
 });
 
