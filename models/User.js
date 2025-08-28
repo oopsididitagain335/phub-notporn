@@ -28,14 +28,14 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: null,
     unique: true,
-    sparse: true, // ← Allows multiple users with linkCode: null
+    sparse: true,  // ✅ Allows multiple users with linkCode: null
     index: true
   },
   discordId: {
     type: String,
     default: null,
     unique: true,
-    sparse: true, // ← This is the FIX: allows multiple users with discordId: null
+    sparse: true,  // ✅ Allows multiple users with discordId: null
     index: true
   },
   isBanned: {
