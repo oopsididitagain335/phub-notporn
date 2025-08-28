@@ -27,15 +27,15 @@ const UserSchema = new mongoose.Schema({
   linkCode: {
     type: String,
     default: null,
-    unique: true,       // Ensures generated codes are unique
-    sparse: true,       // ✅ Allows multiple users with linkCode = null
-    index: true         // Faster lookups when validating codes
+    unique: true,
+    sparse: true, // ← Allows multiple users with linkCode: null
+    index: true
   },
   discordId: {
     type: String,
     default: null,
     unique: true,
-    sparse: true,       // ✅ Only enforces uniqueness for non-null values
+    sparse: true, // ← This is the FIX: allows multiple users with discordId: null
     index: true
   },
   isBanned: {
@@ -51,10 +51,5 @@ const UserSchema = new mongoose.Schema({
     default: Date.now
   }
 });
-
-// 🔁 Drop and recreate indexes (optional, only needed once)
-// Run this once after deploy if issues persist:
-// UserSchema.index({ discordId: 1 }, { unique: true, sparse: true });
-// UserSchema.index({ linkCode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('User', UserSchema);
