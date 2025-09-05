@@ -8,7 +8,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildBans,
-    GatewayIntentBits.DirectMessages // Optional: if you want to log DMs
+    GatewayIntentBits.DirectMessages
   ]
 });
 
@@ -32,6 +32,8 @@ for (const file of commandFiles) {
 // Ready event
 client.once('ready', () => {
   console.log(`🤖 ${client.user.tag} is ready!`);
+  // Optional: Log how many commands were loaded
+  console.log(`📦 Loaded ${client.commands.size} command(s)`);
 });
 
 // Interaction handler (slash commands)
@@ -53,7 +55,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// Sync bans from Discord to your database
+// Sync bans
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
@@ -90,12 +92,10 @@ client.on('guildBanAdd', async (ban) => {
   }
 });
 
-// Start the bot
-function startBot() {
+// Export client and start function
+module.exports = { client, startBot: () => {
   if (!process.env.BOT_TOKEN) {
     throw new Error('❌ BOT_TOKEN is missing in .env');
   }
   return client.login(process.env.BOT_TOKEN);
-}
-
-module.exports = { startBot, client };
+}};
