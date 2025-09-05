@@ -1,4 +1,3 @@
-<!-- views/signup.ejs -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -120,7 +119,7 @@
 <body>
   <div class="container">
     <h1>PulseHub Signup</h1>
-    <% if (typeof error !== 'undefined') { %>
+    <% if (error) { %>
       <p class="error"><%= error %></p>
     <% } %>
 
