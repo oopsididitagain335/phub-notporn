@@ -1,8 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PulseHub | For Creators, by Creators</title>
-  <link href=" https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600&display=swap" rel="stylesheet">
+  <!-- ✅ Google AdSense Auto Ads -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8336311096274398"
      crossorigin="anonymous"></script>
   <style>
@@ -131,5 +134,88 @@
       margin-right: 8px;
       vertical-align: middle;
     }
+
+    /* ✅ Ad Container Styling */
+    .ad-container {
+      margin: 30px auto;
+      max-width: 100%;
+      text-align: center;
+    }
+
+    .ad-label {
+      font-size: 0.75rem;
+      color: #666;
+      margin-bottom: 8px;
+    }
   </style>
 </head>
+<body>
+  <div class="container">
+    <div class="logo"></div>
+    <h1>PulseHub</h1>
+    <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
+    <p class="tagline">Where creativity meets connection</p>
+
+    <!-- ✅ AD UNIT 1: After tagline, before bullet points -->
+    <div class="ad-container">
+      <div class="ad-label">Advertisement</div>
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-format="fluid"
+           data-ad-layout-key="-fb+5w+4e-db+86"
+           data-ad-client="ca-pub-8336311096274398"
+           data-ad-slot="YOUR_SLOT_ID_HERE"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <ul>
+      <li>Network with top creators & collaborate on projects</li>
+      <li>Get early access to tools, templates, and resources</li>
+      <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
+      <li>Safe space to share ideas, without the noise</li>
+    </ul>
+
+    <!-- ✅ AD UNIT 2: Before CTA button -->
+    <div class="ad-container">
+      <div class="ad-label">Sponsored</div>
+      <ins class="adsbygoogle"
+           style="display:block"
+           data-ad-format="fluid"
+           data-ad-layout-key="-gw+5w+4e-db+86"
+           data-ad-client="ca-pub-8336311096274398"
+           data-ad-slot="YOUR_SLOT_ID_HERE"></ins>
+      <script>
+        (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+
+    <a href="/signup" class="btn">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
+        <path d="M12 4v16m-8-8h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      Join the Waitlist
+    </a>
+
+    <% if (typeof totalUsers !== 'undefined') { %>
+      <p style="margin-top: 20px; font-size: 0.85rem; color: #888;">
+        🚀 <%= totalUsers %> creators already joined!
+      </p>
+    <% } %>
+  </div>
+
+  <!-- ✅ Initialize any remaining ads -->
+  <script>
+    window.addEventListener('load', function() {
+      if (window.adsbygoogle && typeof window.adsbygoogle.push === 'function') {
+        try {
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (e) {
+          console.warn('Adsbygoogle push failed:', e);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
