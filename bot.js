@@ -25,15 +25,14 @@ for (const file of commandFiles) {
     client.commands.set(command.data.name, command);
     console.log(`✅ Loaded command: ${command.data.name}`);
   } else {
-    console.warn(`❌ Invalid command at ${filePath}`);
+    console.warn(`❌ Invalid command at ${filePath}: missing 'data' or 'execute'`);
   }
 }
 
 // Ready event
 client.once('ready', () => {
   console.log(`🤖 ${client.user.tag} is ready!`);
-  // Optional: Log how many commands were loaded
-  console.log(`📦 Loaded ${client.commands.size} command(s)`);
+  console.log(`🌍 Serving ${client.guilds.cache.size} server(s).`);
 });
 
 // Interaction handler (slash commands)
@@ -41,33 +40,53 @@ client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+  if (!command) {
+    console.warn(`❌ Command '${interaction.commandName}' not found.`);
+    return;
+  }
 
   try {
     await command.execute(interaction);
   } catch (err) {
-    console.error('❌ Command error:', err);
-    if (interaction.replied || interaction.deferred) return;
+    console.error('❌ Command execution error:', err);
+
+    // If already replied or deferred, don't reply again
+    if (interaction.replied || interaction.deferred) {
+      console.warn(`⚠️ Cannot send error reply: interaction already acknowledged.`);
+      return;
+    }
+
+    // Attempt to send error message, but catch failures (e.g. expired token)
     await interaction.reply({
-      content: '❌ An error occurred while running this command.',
+      content: '❌ Something went wrong while executing this command.',
       ephemeral: true
-    }).catch(console.error);
+    }).catch((replyErr) => {
+      // Ignore known safe errors
+      if (replyErr.code === 10062) {
+        console.warn('❌ Failed to reply: interaction token expired (10062).');
+      } else if (replyErr.code === 40060) {
+        console.warn('❌ Failed to reply: interaction already acknowledged (40060).');
+      } else {
+        console.error('❌ Unexpected reply error:', replyErr);
+      }
+    });
   }
 });
 
-// Sync bans
+// Sync bans from Discord to your database
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
     const guild = ban.guild;
-    if (!user || !guild) return console.warn('⚠️ Missing user or guild');
+    if (!user || !guild) return console.warn('⚠️ Missing user or guild in guildBanAdd event');
 
     console.log(`🚫 ${user.tag} was banned from ${guild.name}`);
+
     const User = require('./models/User');
     const dbUser = await User.findOne({ discordId: user.id });
 
     if (!dbUser) {
-      console.log(`ℹ️ No PulseHub account for ${user.tag}`);
+      console.log(`ℹ️ No PulseHub account linked for ${user.tag}`);
       return;
     }
 
@@ -79,23 +98,28 @@ client.on('guildBanAdd', async (ban) => {
         reason = log.reason || reason;
       }
     } catch (err) {
-      console.warn('Audit log fetch failed:', err.message);
+      console.warn('⚠️ Failed to fetch audit log:', err.message);
     }
 
     dbUser.isBanned = true;
     dbUser.banReason = reason;
     await dbUser.save();
 
-    console.log(`✅ ${dbUser.username} marked as banned: ${reason}`);
+    console.log(`✅ PulseHub account ${dbUser.username} marked as banned: ${reason}`);
   } catch (err) {
-    console.error('❌ Error in guildBanAdd:', err);
+    console.error('❌ Error in guildBanAdd handler:', err);
   }
 });
 
-// Export client and start function
-module.exports = { client, startBot: () => {
+// Start the bot
+function startBot() {
   if (!process.env.BOT_TOKEN) {
     throw new Error('❌ BOT_TOKEN is missing in .env');
   }
-  return client.login(process.env.BOT_TOKEN);
-}};
+
+  return client.login(process.env.BOT_TOKEN).catch((err) => {
+    console.error('❌ Failed to log in:', err);
+  });
+}
+
+module.exports = { client, startBot };
