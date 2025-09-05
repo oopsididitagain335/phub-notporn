@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Link Account</title>
-  <link rel="stylesheet" href="/style.css">
+  <title>Link Discord Account</title>
   <style>
     body {
       font-family: 'Segoe UI', sans-serif;
@@ -20,7 +19,22 @@
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    h1 { color: #00d1b2; }
+    h1 {
+      color: #00d1b2;
+      margin-bottom: 10px;
+    }
+    p.intro {
+      font-size: 1.1em;
+      color: #ccc;
+    }
+    .step {
+      text-align: left;
+      margin: 25px 0;
+      line-height: 1.6;
+    }
+    .step li {
+      margin: 10px 0;
+    }
     .code-display {
       background: #2d2d2d;
       color: #00d1b2;
@@ -30,6 +44,7 @@
       font-size: 1.2em;
       margin: 20px 0;
       text-align: center;
+      word-break: break-all;
     }
     button {
       background: #007bff;
@@ -41,47 +56,76 @@
       margin: 5px;
       font-size: 1em;
     }
-    button:hover { background: #0056b3; }
+    button:hover {
+      background: #0056b3;
+    }
     .footer {
-      margin-top: 20px;
+      margin-top: 25px;
       font-size: 0.9em;
       color: #aaa;
     }
-    a { color: #00d1b2; text-decoration: none; }
-    a:hover { text-decoration: underline; }
+    a {
+      color: #00d1b2;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🔗 Link Your Discord Account</h1>
-    <p>Hello, <strong><%= username %></strong>!</p>
+    <p class="intro">Hello, <strong><%= username %></strong>! Complete these steps to link your Discord.</p>
 
-    <ol style="text-align: left; margin: 20px 0;">
-      <li>Join our server: <a href="<%= inviteUrl %>" target="_blank">discord.gg/MmDs5ees4S</a></li>
-      <li>Type in Discord:</li>
+    <ol class="step">
+      <li>
+        <strong>Join our Discord server:</strong>
+        <br>
+        <a href="<%= inviteUrl %>" target="_blank" rel="noopener">
+          discord.gg/MmDs5ees4S
+        </a>
+        <br>
+        <small style="color: #888;">(You’ll need Discord app or browser with JavaScript enabled)</small>
+      </li>
+      <li>
+        <strong>Type this command in any chat:</strong>
+      </li>
     </ol>
 
     <div class="code-display">
-      <code>/link code:<%= linkCode %></code>
+      /link code:<%= linkCode %>
     </div>
 
-    <button onclick="copy()">📋 Copy</button>
-    <button onclick="check()">✅ Done</button>
+    <button onclick="copyCode()">📋 Copy Command</button>
+    <button onclick="checkLink()">✅ I’ve Sent It</button>
 
     <div class="footer">
-      ⚠️ If you see "JavaScript" error, try incognito mode.<br>
-      This code works only once.
+      <p>
+        ⚠️ This code expires after one use.<br>
+        Need help? Contact support in the Discord server.
+      </p>
     </div>
   </div>
 
   <script>
-    function copy() {
-      navigator.clipboard.writeText('/link <%= linkCode %>')
-        .then(() => alert('✅ Copied!'))
-        .catch(err => alert('❌ Copy failed: ' + err));
+    // Copy the full command
+    function copyCode() {
+      const command = '/link code:<%= linkCode %>';
+      navigator.clipboard.writeText(command)
+        .then(() => {
+          alert('✅ Copied!\nNow paste it in Discord.');
+        })
+        .catch(err => {
+          console.error('Copy failed:', err);
+          alert('❌ Copy failed. Please manually select and copy the command.');
+        });
     }
-    function check() {
-      window.location.reload();
+
+    // Refresh to check if linked
+    function checkLink() {
+      window.location.href = '/home'; // Redirect to home, which will check discordId
     }
   </script>
 </body>
