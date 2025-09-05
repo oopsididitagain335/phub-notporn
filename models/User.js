@@ -22,12 +22,12 @@ const userSchema = new mongoose.Schema({
   discordId: {
     type: String,
     unique: true,
-    sparse: true  // ← Allows multiple nulls
+    sparse: true  // ← OK
   },
   linkCode: {
     type: String,
     unique: true,
-    sparse: true  // ← Allows multiple nulls
+    sparse: true  // ← Critical: allows multiple nulls
   },
   isBanned: {
     type: Boolean,
