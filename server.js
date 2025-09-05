@@ -1,4 +1,3 @@
-// server.js
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
@@ -25,10 +24,9 @@ app.set('views', path.join(__dirname, 'views'));
 const sessionStore = MongoStore.create({
   mongoUrl: process.env.MONGO_URI,
   collectionName: 'sessions',
-  ttl: 86400 // 24 hours
+  ttl: 86400
 });
 
-// Session Config
 app.use(
   session({
     secret: process.env.SESSION_SECRET || 'supersecret_dev_secret_change_in_prod',
@@ -38,19 +36,10 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 1000 * 60 * 60 * 24 // 24h
+      maxAge: 1000 * 60 * 60 * 24
     }
   })
 );
-
-// Global Error Handlers
-process.on('unhandledRejection', (err) => {
-  console.error('🚨 Unhandled Rejection:', err);
-});
-process.on('uncaughtException', (err) => {
-  console.error('🚨 Uncaught Exception:', err);
-  process.exit(1);
-});
 
 // Auth Middleware
 function requireAuth(req, res, next) {
@@ -58,7 +47,6 @@ function requireAuth(req, res, next) {
   next();
 }
 
-// Ban Check Middleware
 async function checkBan(req, res, next) {
   if (req.session.userId) {
     try {
@@ -87,29 +75,22 @@ async function checkBan(req, res, next) {
 // MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000
+  useUnifiedTopology: true
 })
 .then(async () => {
   console.log('✅ MongoDB connected');
 
-  // Recreate sparse indexes to fix E11000 errors
-  try {
-    const User = require('./models/User');
+  // Fix sparse unique indexes
+  await User.collection.dropIndex('discordId_1').catch(() => {});
+  await User.collection.dropIndex('linkCode_1').catch(() => {});
+  
+  await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
+  await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
 
-    await User.collection.dropIndex('discordId_1').catch(() => {});
-    await User.collection.dropIndex('linkCode_1').catch(() => {});
-
-    await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
-    await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
-
-    console.log('✅ Sparse unique indexes applied: discordId_1, linkCode_1');
-  } catch (err) {
-    console.error('❌ Index recreation failed:', err);
-  }
+  console.log('✅ Sparse indexes applied');
 })
 .catch(err => {
-  console.error('❌ MongoDB connection error:', err.message || err);
+  console.error('❌ MongoDB connection error:', err.message);
   process.exit(1);
 });
 
@@ -127,15 +108,8 @@ async function generateUniqueLinkCode() {
 }
 
 // Routes
-
-app.get('/', async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-    res.render('index', { totalUsers });
-  } catch (err) {
-    console.error('Landing page error:', err);
-    res.status(500).send('<h1>❌ Server Error</h1><p>Please try again later.</p>');
-  }
+app.get('/', (req, res) => {
+  res.render('index');
 });
 
 app.get('/signup', (req, res) => {
@@ -148,39 +122,56 @@ app.post('/signup', async (req, res) => {
     return res.render('signup', { error: 'All fields are required.' });
   }
 
+  const cleanUsername = username.trim();
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanPassword = password.trim();
+
+  if (cleanUsername.length < 3 || cleanUsername.length > 30) {
+    return res.render('signup', { error: 'Username must be 3–30 characters.' });
+  }
+  if (cleanPassword.length < 6) {
+    return res.render('signup', { error: 'Password must be at least 6 characters.' });
+  }
+  if (!/^[\w.-]+$/.test(cleanUsername)) {
+    return res.render('signup', { error: 'Username can only contain letters, numbers, _, ., and -' });
+  }
+  if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
+    return res.render('signup', { error: 'Please enter a valid email.' });
+  }
+
   try {
     const existing = await User.findOne({
       $or: [
-        { username: new RegExp(`^${username.trim()}$`, 'i') },
-        { email: new RegExp(`^${email.trim()}$`, 'i') }
+        { username: { $regex: new RegExp(`^${cleanUsername}$`, 'i') } },
+        { email: cleanEmail }
       ]
     });
 
     if (existing) {
-      return res.render('signup', { error: 'Username or email already taken.' });
+      return res.render('signup', { 
+        error: existing.username.toLowerCase() === cleanUsername.toLowerCase() 
+          ? 'Username already taken.' 
+          : 'Email already in use.' 
+      });
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
+    const passwordHash = await bcrypt.hash(cleanPassword, 12);
     const linkCode = await generateUniqueLinkCode();
 
     const user = await User.create({
-      username: username.trim(),
-      email: email.trim(),
+      username: cleanUsername,
+      email: cleanEmail,
       passwordHash,
       linkCode
     });
 
     req.session.userId = user._id;
-    req.session.user = { username: user.username, discordId: user.discordId };
+    req.session.user = { username: user.username };
 
     res.redirect('/link');
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).send(`
-      <h1>❌ Server Error</h1>
-      <p>Failed to create account. Check logs.</p>
-      <pre>${err.message}</pre>
-    `);
+    res.status(500).send('<h1>❌ Server Error</h1><p>Failed to create account.</p>');
   }
 });
 
@@ -197,25 +188,21 @@ app.post('/login', async (req, res) => {
   try {
     const user = await User.findOne({
       $or: [
-        { username: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') },
+        { username: { $regex: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') } },
         { email: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') }
       ]
     });
 
-    if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
+    if (!user || !(await bcrypt.compare(password.trim(), user.passwordHash))) {
       return res.render('login', { error: 'Invalid credentials.' });
     }
 
     if (user.isBanned) {
-      return res.status(403).send(`
-        <h1>🚫 Banned</h1>
-        <p>${user.banReason || 'You have been banned.'}</p>
-        <a href="/login">Try Again</a>
-      `);
+      return res.status(403).send('🚫 You are banned.');
     }
 
     req.session.userId = user._id;
-    req.session.user = { username: user.username, discordId: user.discordId };
+    req.session.user = { username: user.username };
 
     res.redirect(user.discordId ? '/home' : '/link');
   } catch (err) {
@@ -224,28 +211,21 @@ app.post('/login', async (req, res) => {
   }
 });
 
-app.get('/link', requireAuth, checkBan, async (req, res) => {
+app.get('/link', requireAuth, checkBan, (req, res) => {
   const user = res.locals.user;
   if (user.discordId) return res.redirect('/home');
-
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S' // ✅ Clean
+    inviteUrl: 'https://discord.gg/MmDs5ees4S'
   });
 });
 
 app.get('/home', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
   if (!user.discordId) return res.redirect('/link');
-
-  try {
-    const totalUsers = await User.countDocuments();
-    res.render('home', { user, totalUsers });
-  } catch (err) {
-    console.error('Home error:', err);
-    res.status(500).send('<h1>❌ Failed to load home</h1><a href="/link">Try Again</a>');
-  }
+  const totalUsers = await User.countDocuments();
+  res.render('home', { user, totalUsers });
 });
 
 app.post('/logout', requireAuth, (req, res) => {
@@ -255,34 +235,15 @@ app.post('/logout', requireAuth, (req, res) => {
   });
 });
 
-// 404 Handler
+// 404
 app.use((req, res) => {
-  res.status(404).send(`
-    <h1>🔍 Page Not Found</h1>
-    <p>The page you're looking for doesn't exist.</p>
-    <a href="/">← Home</a>
-  `);
-});
-
-// 500 Handler
-app.use((err, req, res, next) => {
-  console.error('Unhandled error:', err);
-  res.status(500).send(`
-    <h1>❌ Server Error</h1>
-    <p>An unexpected error occurred.</p>
-    <pre>${err.message}</pre>
-  `);
+  res.status(404).send('<h1>🔍 Page Not Found</h1><a href="/">← Home</a>');
 });
 
 // Start Discord Bot
-startBot().catch(err => {
-  console.error('❌ Failed to start bot:', err);
-});
+startBot().catch(err => console.error('❌ Bot failed to start:', err));
 
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`👉 Open http://localhost:${PORT}`);
-  }
 });
