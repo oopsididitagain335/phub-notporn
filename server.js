@@ -12,7 +12,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Validate environment variables
-const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'EMAIL_USER', 'EMAIL_APP_PASSWORD'];
+const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'EMAIL_USER', 'EMAIL_APP_PASSWORD', 'DISCORD_TOKEN'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingEnvVars.length > 0) {
   console.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
@@ -86,44 +86,62 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(async () => {
     console.log('✅ MongoDB connected');
-    // Manage indexes without dropping
+    // Manage indexes robustly
     try {
-      console.log('🛠️ Checking and updating indexes...');
+      console.log('🛠️ Ensuring indexes...');
       const desiredIndexes = [
-        { key: { discordId: 1 }, options: { unique: true, sparse: true, name: 'discordId_1' } },
-        { key: { linkCode: 1 }, options: { unique: true, sparse: true, name: 'linkCode_1' } },
-        { key: { username: 1 }, options: { unique: true, collation: { locale: 'en', strength: 2 }, name: 'username_1' } },
-        { key: { email: 1 }, options: { unique: true, collation: { locale: 'en', strength: 2 }, background: true, name: 'email_1' } }
+        { key: { discordId: 1 }, options: { unique: true, sparse: true, name: 'discordId_1', background: true } },
+        { key: { linkCode: 1 }, options: { unique: true, sparse: true, name: 'linkCode_1', background: true } },
+        { key: { username: 1 }, options: { unique: true, collation: { locale: 'en', strength: 2 }, name: 'username_1', background: true } },
+        { key: { email: 1 }, options: { unique: true, collation: { locale: 'en', strength: 2 }, name: 'email_1', background: true } }
       ];
 
-      const existingIndexes = await User.collection.indexes();
       for (const { key, options } of desiredIndexes) {
         const indexName = options.name;
-        const existingIndex = existingIndexes.find(idx => idx.name === indexName);
+        try {
+          const existingIndexes = await User.collection.indexes();
+          const existingIndex = existingIndexes.find(idx => idx.name === indexName);
 
-        if (existingIndex) {
-          // Check if existing index matches desired options
-          const matches = existingIndex.unique === options.unique &&
-                          (existingIndex.sparse === options.sparse || !options.sparse) &&
-                          JSON.stringify(existingIndex.collation) === JSON.stringify(options.collation) &&
-                          existingIndex.background === (options.background ?? true);
-          if (!matches) {
-            console.log(`🛠️ Updating index: ${indexName}`);
-            try {
-              await User.collection.dropIndex(indexName);
-              console.log(`✅ Dropped outdated index: ${indexName}`);
+          if (existingIndex) {
+            // Check if existing index matches desired options
+            const matches = existingIndex.unique === options.unique &&
+                            (existingIndex.sparse === options.sparse || !options.sparse) &&
+                            JSON.stringify(existingIndex.collation || {}) === JSON.stringify(options.collation || {}) &&
+                            (existingIndex.background === (options.background ?? true));
+            if (!matches) {
+              console.log(`🛠️ Updating index: ${indexName}`);
+              // Drop and recreate only if options differ
+              try {
+                await User.collection.dropIndex(indexName);
+                console.log(`✅ Dropped outdated index: ${indexName}`);
+              } catch (dropErr) {
+                if (dropErr.codeName !== 'IndexNotFound') {
+                  console.error(`⚠️ Error dropping index ${indexName}:`, dropErr.message);
+                }
+              }
               await User.collection.createIndex(key, options);
               console.log(`✅ Created updated index: ${indexName}`);
-            } catch (err) {
-              console.error(`❌ Error updating index ${indexName}:`, err.message);
+            } else {
+              console.log(`✅ Index ${indexName} is up-to-date`);
             }
           } else {
-            console.log(`✅ Index ${indexName} is up-to-date`);
+            // Create new index if it doesn't exist
+            await User.collection.createIndex(key, options);
+            console.log(`✅ Created new index: ${indexName}`);
           }
-        } else {
-          // Create new index if it doesn't exist
-          await User.collection.createIndex(key, options);
-          console.log(`✅ Created new index: ${indexName}`);
+        } catch (err) {
+          if (err.code === 86 && err.codeName === 'IndexKeySpecsConflict') {
+            console.log(`⚠️ Index ${indexName} conflict detected, forcing update...`);
+            try {
+              await User.collection.dropIndex(indexName);
+              await User.collection.createIndex(key, options);
+              console.log(`✅ Resolved conflict for index: ${indexName}`);
+            } catch (resolveErr) {
+              console.error(`❌ Failed to resolve index ${indexName}:`, resolveErr.message);
+            }
+          } else {
+            console.error(`❌ Error ensuring index ${indexName}:`, err.message);
+          }
         }
       }
       console.log('✅ All indexes verified and updated');
@@ -166,7 +184,6 @@ try {
       pass: process.env.EMAIL_APP_PASSWORD
     }
   });
-  // Verify email configuration
   transporter.verify((error, success) => {
     if (error) {
       console.error('❌ Email transport configuration error:', error);
