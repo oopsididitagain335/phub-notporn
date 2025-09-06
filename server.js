@@ -235,11 +235,48 @@ async function sendVerificationEmail(email, verificationToken) {
   }
 }
 
+// DevTools detection script
+const devtoolsDetectionScript = `
+<script>
+  // DevTools detection
+  let devtools = {
+    open: false,
+    orientation: null
+  };
+  
+  const threshold = 160;
+  
+  setInterval(() => {
+    if (window.outerHeight - window.innerHeight > threshold || 
+        window.outerWidth - window.innerWidth > threshold) {
+      if (!devtools.open) {
+        devtools.open = true;
+        devtools.orientation = window.outerHeight - window.innerHeight > threshold ? 'vertical' : 'horizontal';
+        // Redirect to GIF when devtools detected
+        window.location.href = 'https://tenor.com/knyHIfWEcPr.gif';
+      }
+    } else {
+      devtools.open = false;
+      devtools.orientation = null;
+    }
+  }, 500);
+  
+  // Additional detection methods
+  let element = new Image();
+  Object.defineProperty(element, 'id', {
+    get: function() {
+      window.location.href = 'https://tenor.com/knyHIfWEcPr.gif';
+    }
+  });
+  console.log(element);
+</script>
+`;
+
 // Routes
 app.get('/', async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
-    res.render('index', { totalUsers });
+    res.render('index', { totalUsers, devtoolsDetectionScript });
   } catch (err) {
     console.error('Landing page error:', err);
     res.status(500).send('<h1>❌ Server Error</h1><p>Please try again later.</p>');
@@ -247,29 +284,29 @@ app.get('/', async (req, res) => {
 });
 
 app.get('/signup', (req, res) => {
-  res.render('signup', { error: null });
+  res.render('signup', { error: null, devtoolsDetectionScript });
 });
 
 app.post('/signup', async (req, res) => {
   const { username, email, password } = req.body;
   if (!username || !email || !password) {
-    return res.render('signup', { error: 'All fields are required.' });
+    return res.render('signup', { error: 'All fields are required.', devtoolsDetectionScript });
   }
   const cleanUsername = username.trim();
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
   // Validation
   if (cleanUsername.length < 3 || cleanUsername.length > 30) {
-    return res.render('signup', { error: 'Username must be 3–30 characters.' });
+    return res.render('signup', { error: 'Username must be 3–30 characters.', devtoolsDetectionScript });
   }
   if (cleanPassword.length < 6) {
-    return res.render('signup', { error: 'Password must be at least 6 characters.' });
+    return res.render('signup', { error: 'Password must be at least 6 characters.', devtoolsDetectionScript });
   }
   if (!/^[\w.-]+$/.test(cleanUsername)) {
-    return res.render('signup', { error: 'Username can only contain letters, numbers, _, ., and -' });
+    return res.render('signup', { error: 'Username can only contain letters, numbers, _, ., and -', devtoolsDetectionScript });
   }
   if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-    return res.render('signup', { error: 'Please enter a valid email.' });
+    return res.render('signup', { error: 'Please enter a valid email.', devtoolsDetectionScript });
   }
   try {
     const existing = await User.findOne({
@@ -282,7 +319,8 @@ app.post('/signup', async (req, res) => {
       return res.render('signup', {
         error: existing.username.toLowerCase() === cleanUsername.toLowerCase()
           ? 'Username already taken.'
-          : 'Email already in use.'
+          : 'Email already in use.',
+        devtoolsDetectionScript
       });
     }
     const passwordHash = await bcrypt.hash(cleanPassword, 12);
@@ -301,11 +339,12 @@ app.post('/signup', async (req, res) => {
       res.render('verify-email-sent', {
         email: cleanEmail,
         success: true,
-        error: null
+        error: null,
+        devtoolsDetectionScript
       });
     } else {
       await User.deleteOne({ _id: user._id });
-      res.render('signup', { error: 'Failed to send verification email. Please try again.' });
+      res.render('signup', { error: 'Failed to send verification email. Please try again.', devtoolsDetectionScript });
     }
   } catch (err) {
     console.error('Signup error:', err);
@@ -318,7 +357,8 @@ app.get('/verify-email', async (req, res) => {
   if (!token) {
     return res.render('verify-email', {
       error: 'Invalid verification link',
-      success: false
+      success: false,
+      devtoolsDetectionScript
     });
   }
   try {
@@ -329,7 +369,8 @@ app.get('/verify-email', async (req, res) => {
     if (!user) {
       return res.render('verify-email', {
         error: 'Invalid or expired verification token',
-        success: false
+        success: false,
+        devtoolsDetectionScript
       });
     }
     const tokenAge = Date.now() - new Date(user.createdAt).getTime();
@@ -338,7 +379,8 @@ app.get('/verify-email', async (req, res) => {
       await User.deleteOne({ _id: user._id });
       return res.render('verify-email', {
         error: 'Verification token has expired. Please sign up again.',
-        success: false
+        success: false,
+        devtoolsDetectionScript
       });
     }
     await User.findByIdAndUpdate(user._id, {
@@ -348,25 +390,27 @@ app.get('/verify-email', async (req, res) => {
     res.render('verify-email', {
       success: true,
       error: null,
-      message: 'Email verified successfully!'
+      message: 'Email verified successfully!',
+      devtoolsDetectionScript
     });
   } catch (err) {
     console.error('Email verification error:', err);
     res.render('verify-email', {
       error: 'An error occurred during verification',
-      success: false
+      success: false,
+      devtoolsDetectionScript
     });
   }
 });
 
 app.get('/login', (req, res) => {
-  res.render('login', { error: null });
+  res.render('login', { error: null, devtoolsDetectionScript });
 });
 
 app.post('/login', async (req, res) => {
   const { usernameOrEmail, password } = req.body;
   if (!usernameOrEmail || !password) {
-    return res.render('login', { error: 'All fields required.' });
+    return res.render('login', { error: 'All fields required.', devtoolsDetectionScript });
   }
   try {
     const cleanInput = usernameOrEmail.trim();
@@ -377,14 +421,15 @@ app.post('/login', async (req, res) => {
       ]
     });
     if (!user || !(await bcrypt.compare(password.trim(), user.passwordHash))) {
-      return res.render('login', { error: 'Invalid credentials.' });
+      return res.render('login', { error: 'Invalid credentials.', devtoolsDetectionScript });
     }
     if (user.isBanned) {
       return res.status(403).send('🚫 You are banned.');
     }
     if (!user.emailVerified) {
       return res.render('login', {
-        error: 'Please verify your email address before logging in.'
+        error: 'Please verify your email address before logging in.',
+        devtoolsDetectionScript
       });
     }
     req.session.userId = user._id;
@@ -423,7 +468,8 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
-    inviteUrl: 'https://discord.gg/MmDs5ees4S'
+    inviteUrl: 'https://discord.gg/MmDs5ees4S',
+    devtoolsDetectionScript
   });
 });
 
@@ -431,7 +477,7 @@ app.get('/home', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
   if (!user.discordId) return res.redirect('/link');
   const totalUsers = await User.countDocuments();
-  res.render('home', { user, totalUsers });
+  res.render('home', { user, totalUsers, devtoolsDetectionScript });
 });
 
 app.post('/logout', requireAuth, (req, res) => {
