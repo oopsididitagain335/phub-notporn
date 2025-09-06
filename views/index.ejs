@@ -229,6 +229,43 @@
       font-weight: 600;
     }
 
+    /* Loading Screen */
+    .loading-screen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: #121212;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      color: white;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .loading-spinner {
+      width: 60px;
+      height: 60px;
+      border: 5px solid #3498db;
+      border-top: 5px solid transparent;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 1.2rem;
+      color: #3498db;
+    }
+
     @media (max-width: 500px) {
       .container {
         padding: 30px 20px;
@@ -242,58 +279,67 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo">
-      <div class="logo-inner"></div>
+  <% if (totalUsers >= 50) { %>
+    <!-- Full screen loading animation -->
+    <div class="loading-screen">
+      <div class="loading-spinner"></div>
+      <p class="loading-text">Loading PulseHub...</p>
     </div>
-    <h1>PulseHub</h1>
-    <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
+  <% } else { %>
+    <!-- Normal home page content -->
+    <div class="container">
+      <div class="logo">
+        <div class="logo-inner"></div>
+      </div>
+      <h1>PulseHub</h1>
+      <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
 
-    <!-- AD UNIT 1: After tagline, before bullet points -->
-    <div class="ad-container">
-      <div class="ad-label">Advertisement</div>
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-format="fluid"
-           data-ad-layout-key="-fb+5w+4e-db+86"
-           data-ad-client="ca-pub-8336311096274398"
-           data-ad-slot="YOUR_SLOT_ID_HERE"></ins>
-      <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
+      <!-- AD UNIT 1: After tagline, before bullet points -->
+      <div class="ad-container">
+        <div class="ad-label">Advertisement</div>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-format="fluid"
+             data-ad-layout-key="-fb+5w+4e-db+86"
+             data-ad-client="ca-pub-8336311096274398"
+             data-ad-slot="YOUR_SLOT_ID_HERE"></ins>
+        <script>
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+      </div>
+
+      <ul>
+        <li>Network with top creators & collaborate on projects</li>
+        <li>Get early access to tools, templates, and resources</li>
+        <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
+        <li>Safe space to share ideas, without the noise</li>
+      </ul>
+
+      <!-- AD UNIT 2: Before CTA button -->
+      <div class="ad-container">
+        <div class="ad-label">Sponsored</div>
+        <ins class="adsbygoogle"
+             style="display:block"
+             data-ad-format="fluid"
+             data-ad-layout-key="-gw+5w+4e-db+86"
+             data-ad-client="ca-pub-8336311096274398"
+             data-ad-slot="YOUR_SLOT_ID_HERE"></ins>
+        <script>
+          (adsbygoogle = window.adsbygoogle || []).push({});
+        </script>
+      </div>
+
+      <a href="/signup" class="btn">
+        <i class="fas fa-user-plus"></i> Join the Waitlist
+      </a>
+
+      <div class="stats">
+        <i class="fas fa-rocket"></i>
+        <span><%= totalUsers %></span>
+        <span>creators already joined!</span>
+      </div>
     </div>
-
-    <ul>
-      <li>Network with top creators & collaborate on projects</li>
-      <li>Get early access to tools, templates, and resources</li>
-      <li>Exclusive AMAs, feedback sessions, and growth workshops</li>
-      <li>Safe space to share ideas, without the noise</li>
-    </ul>
-
-    <!-- AD UNIT 2: Before CTA button -->
-    <div class="ad-container">
-      <div class="ad-label">Sponsored</div>
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-format="fluid"
-           data-ad-layout-key="-gw+5w+4e-db+86"
-           data-ad-client="ca-pub-8336311096274398"
-           data-ad-slot="YOUR_SLOT_ID_HERE"></ins>
-      <script>
-        (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </div>
-
-    <a href="/signup" class="btn">
-      <i class="fas fa-user-plus"></i> Join the Waitlist
-    </a>
-
-    <div class="stats">
-      <i class="fas fa-rocket"></i>
-      <span>1,248</span>
-      <span>creators already joined!</span>
-    </div>
-  </div>
+  <% } %>
 
   <!-- Initialize any remaining ads -->
   <script>
