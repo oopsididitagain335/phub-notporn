@@ -6,6 +6,9 @@
   <title>PulseHub | For Creators, by Creators</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- ✅ Google AdSense Auto Ads -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8336311096274398"
+     crossorigin="anonymous"></script>
   <style>
     * {
       margin: 0;
@@ -33,14 +36,17 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 20px;
+      padding: 0;
       position: relative;
       overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(109, 158, 235, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(160, 132, 255, 0.05) 0%, transparent 20%);
     }
 
     .container {
-      max-width: 500px;
       width: 100%;
+      max-width: 500px;
       background: var(--card-bg);
       border-radius: 20px;
       padding: 40px;
@@ -49,6 +55,7 @@
       border: 1px solid var(--border);
       position: relative;
       z-index: 2;
+      margin: 20px;
     }
 
     .logo {
@@ -102,14 +109,6 @@
       margin-bottom: 24px;
       line-height: 1.6;
       font-weight: 400;
-    }
-
-    .tagline {
-      font-style: italic;
-      color: var(--text-secondary);
-      margin-bottom: 32px;
-      font-size: 1rem;
-      font-weight: 300;
     }
 
     ul {
@@ -219,6 +218,10 @@
       border-top: 1px solid rgba(255, 255, 255, 0.05);
       font-size: 0.9rem;
       color: var(--text-secondary);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
     }
 
     .stats span {
@@ -226,55 +229,14 @@
       font-weight: 600;
     }
 
-    .features {
-      display: flex;
-      justify-content: space-between;
-      margin-top: 30px;
-      gap: 15px;
-    }
-
-    .feature-card {
-      background: rgba(255, 255, 255, 0.03);
-      border-radius: 12px;
-      padding: 15px;
-      flex: 1;
-      transition: all 0.3s ease;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .feature-card:hover {
-      background: rgba(109, 158, 235, 0.1);
-      transform: translateY(-5px);
-    }
-
-    .feature-card i {
-      font-size: 1.5rem;
-      color: var(--primary);
-      margin-bottom: 10px;
-    }
-
-    .feature-card h3 {
-      font-size: 0.9rem;
-      margin-bottom: 5px;
-      font-weight: 600;
-    }
-
-    .feature-card p {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-    }
-
     @media (max-width: 500px) {
       .container {
         padding: 30px 20px;
+        margin: 10px;
       }
       
       h1 {
         font-size: 1.8rem;
-      }
-      
-      .features {
-        flex-direction: column;
       }
     }
   </style>
@@ -286,26 +248,6 @@
     </div>
     <h1>PulseHub</h1>
     <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
-    <p class="tagline">Where creativity meets connection</p>
-
-    <!-- Feature Cards -->
-    <div class="features">
-      <div class="feature-card">
-        <i class="fas fa-users"></i>
-        <h3>Community</h3>
-        <p>Connect with top creators</p>
-      </div>
-      <div class="feature-card">
-        <i class="fas fa-tools"></i>
-        <h3>Resources</h3>
-        <p>Exclusive tools & templates</p>
-      </div>
-      <div class="feature-card">
-        <i class="fas fa-graduation-cap"></i>
-        <h3>Learning</h3>
-        <p>Growth workshops & AMAs</p>
-      </div>
-    </div>
 
     <!-- AD UNIT 1: After tagline, before bullet points -->
     <div class="ad-container">
@@ -347,7 +289,9 @@
     </a>
 
     <div class="stats">
-      <p>🚀 <span>1,248</span> creators already joined!</p>
+      <i class="fas fa-rocket"></i>
+      <span>1,248</span>
+      <span>creators already joined!</span>
     </div>
   </div>
 
