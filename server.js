@@ -166,59 +166,6 @@ mongoose.connect(process.env.MONGO_URI, {
       console.error('❌ Index management error:', err);
     }
 
-    // --- ✅ DYNAMIC EJS ROUTES ---
-    const viewsPath = path.join(__dirname, 'views');
-    const existingRoutes = [
-      '/', '/signup', '/login', '/link', '/home',
-      '/verify-email', '/logout', '/verify-email-sent'
-    ];
-
-    console.log('🔧 Scanning views directory for dynamic routes...');
-
-    try {
-      const files = fs.readdirSync(viewsPath);
-      files.forEach(file => {
-        if (file.endsWith('.ejs') && !file.startsWith('_')) {
-          const routeName = '/' + file.slice(0, -4);
-
-          if (existingRoutes.includes(routeName)) {
-            console.log(`⚠️ Skipping ${routeName} — already manually defined.`);
-            return;
-          }
-
-          app.get(routeName, async (req, res) => {
-            try {
-              const renderData = {
-                devtoolsDetectionScript,
-                companyName: 'pulsehub'
-              };
-
-              if (req.session && req.session.userId) {
-                try {
-                  const user = await User.findById(req.session.userId);
-                  if (user && !user.isBanned) {
-                    renderData.user = user;
-                  }
-                } catch (err) {
-                  console.warn('User fetch error in dynamic route:', err.message);
-                }
-              }
-
-              res.render(file.slice(0, -4), renderData);
-            } catch (err) {
-              console.error(`❌ Failed to render ${file}:`, err);
-              res.status(404).send('<h1>🔍 Page Not Found</h1><a href="/">← Home</a>');
-            }
-          });
-
-          console.log(`✅ Registered dynamic route: ${routeName} → ${file}`);
-        }
-      });
-    } catch (err) {
-      console.error('❌ Failed to read views directory:', err);
-    }
-    // --- ✅ END DYNAMIC EJS ROUTES ---
-
     // Email transporter setup
     let transporter;
     try {
@@ -530,6 +477,62 @@ mongoose.connect(process.env.MONGO_URI, {
         res.redirect('/');
       });
     });
+
+    // --- ✅ DYNAMIC EJS ROUTES (Now with ToS-safe variables) ---
+    const viewsPath = path.join(__dirname, 'views');
+    const existingRoutes = [
+      '/', '/signup', '/login', '/link', '/home',
+      '/verify-email', '/logout', '/verify-email-sent'
+    ];
+
+    console.log('🔧 Scanning views directory for dynamic routes...');
+
+    try {
+      const files = fs.readdirSync(viewsPath);
+      files.forEach(file => {
+        if (file.endsWith('.ejs') && !file.startsWith('_')) {
+          const routeName = '/' + file.slice(0, -4);
+
+          if (existingRoutes.includes(routeName)) {
+            console.log(`⚠️ Skipping ${routeName} — already manually defined.`);
+            return;
+          }
+
+          app.get(routeName, async (req, res) => {
+            try {
+              const renderData = {
+                devtoolsDetectionScript,
+                companyName: 'pulsehub',
+                websiteUrl: process.env.WEBSITE_URL || 'pulsehub.space',
+                lastUpdated: process.env.TOS_LAST_UPDATED || new Date().toISOString().slice(0, 10),
+                securityEmail: process.env.SECURITY_EMAIL || 'security@pulsehub.space'
+              };
+
+              if (req.session && req.session.userId) {
+                try {
+                  const user = await User.findById(req.session.userId);
+                  if (user && !user.isBanned) {
+                    renderData.user = user;
+                  }
+                } catch (err) {
+                  console.warn('User fetch error in dynamic route:', err.message);
+                }
+              }
+
+              res.render(file.slice(0, -4), renderData);
+            } catch (err) {
+              console.error(`❌ Failed to render ${file}:`, err);
+              res.status(404).send('<h1>🔍 Page Not Found</h1><a href="/">← Home</a>');
+            }
+          });
+
+          console.log(`✅ Registered dynamic route: ${routeName} → ${file}`);
+        }
+      });
+    } catch (err) {
+      console.error('❌ Failed to read views directory:', err);
+    }
+    // --- ✅ END DYNAMIC EJS ROUTES ---
 
     // 404 Handler
     app.use((req, res) => {
