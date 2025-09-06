@@ -9,7 +9,7 @@ const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
 const app = express();
-const PORT = process.env.PORT || 5000; // Updated to match logs (5000)
+const PORT = process.env.PORT || 5000;
 
 // Validate environment variables
 const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'EMAIL_USER', 'EMAIL_APP_PASSWORD'];
@@ -34,7 +34,6 @@ const sessionStore = MongoStore.create({
   collectionName: 'sessions',
   ttl: 86400
 });
-
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
@@ -87,55 +86,52 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(async () => {
     console.log('✅ MongoDB connected');
-    // Safely manage indexes
+    // Manage indexes without dropping
     try {
-      console.log('🛠️ Dropping existing indexes...');
-      // Drop existing indexes to avoid conflicts
-      const indexes = ['discordId_1', 'linkCode_1', 'username_1', 'email_1'];
-      for (const index of indexes) {
-        try {
-          await User.collection.dropIndex(index);
-          console.log(`✅ Dropped index: ${index}`);
-        } catch (err) {
-          if (err.codeName !== 'IndexNotFound') {
-            console.error(`⚠️ Error dropping index ${index}:`, err.message);
+      console.log('🛠️ Checking and updating indexes...');
+      const desiredIndexes = [
+        { key: { discordId: 1 }, options: { unique: true, sparse: true, name: 'discordId_1' } },
+        { key: { linkCode: 1 }, options: { unique: true, sparse: true, name: 'linkCode_1' } },
+        { key: { username: 1 }, options: { unique: true, collation: { locale: 'en', strength: 2 }, name: 'username_1' } },
+        { key: { email: 1 }, options: { unique: true, collation: { locale: 'en', strength: 2 }, background: true, name: 'email_1' } }
+      ];
+
+      const existingIndexes = await User.collection.indexes();
+      for (const { key, options } of desiredIndexes) {
+        const indexName = options.name;
+        const existingIndex = existingIndexes.find(idx => idx.name === indexName);
+
+        if (existingIndex) {
+          // Check if existing index matches desired options
+          const matches = existingIndex.unique === options.unique &&
+                          (existingIndex.sparse === options.sparse || !options.sparse) &&
+                          JSON.stringify(existingIndex.collation) === JSON.stringify(options.collation) &&
+                          existingIndex.background === (options.background ?? true);
+          if (!matches) {
+            console.log(`🛠️ Updating index: ${indexName}`);
+            try {
+              await User.collection.dropIndex(indexName);
+              console.log(`✅ Dropped outdated index: ${indexName}`);
+              await User.collection.createIndex(key, options);
+              console.log(`✅ Created updated index: ${indexName}`);
+            } catch (err) {
+              console.error(`❌ Error updating index ${indexName}:`, err.message);
+            }
+          } else {
+            console.log(`✅ Index ${indexName} is up-to-date`);
           }
+        } else {
+          // Create new index if it doesn't exist
+          await User.collection.createIndex(key, options);
+          console.log(`✅ Created new index: ${indexName}`);
         }
       }
-
-      console.log('🛠️ Creating new indexes...');
-      // Create indexes with consistent options
-      await User.collection.createIndex(
-        { discordId: 1 },
-        { unique: true, sparse: true, name: 'discordId_1' }
-      );
-      await User.collection.createIndex(
-        { linkCode: 1 },
-        { unique: true, sparse: true, name: 'linkCode_1' }
-      );
-      await User.collection.createIndex(
-        { username: 1 },
-        {
-          unique: true,
-          collation: { locale: 'en', strength: 2 },
-          name: 'username_1'
-        }
-      );
-      await User.collection.createIndex(
-        { email: 1 },
-        {
-          unique: true,
-          collation: { locale: 'en', strength: 2 },
-          name: 'email_1'
-        }
-      );
-      console.log('✅ All indexes created successfully');
+      console.log('✅ All indexes verified and updated');
 
       // Fix users with null linkCode
       console.log('🛠️ Checking for users with null linkCode...');
       const nullUsers = await User.find({ linkCode: null });
       console.log(`Found ${nullUsers.length} users with null linkCode`);
-
       for (const user of nullUsers) {
         try {
           const newCode = await User.generateUniqueLinkCode();
@@ -150,7 +146,7 @@ mongoose.connect(process.env.MONGO_URI, {
       }
       console.log('✅ Legacy null linkCode users processed');
     } catch (err) {
-      console.error('❌ Index creation error:', err);
+      console.error('❌ Index management error:', err);
     }
   })
   .catch(err => {
@@ -170,7 +166,6 @@ try {
       pass: process.env.EMAIL_APP_PASSWORD
     }
   });
-
   // Verify email configuration
   transporter.verify((error, success) => {
     if (error) {
@@ -190,9 +185,7 @@ async function sendVerificationEmail(email, verificationToken) {
     console.error('❌ Email transporter not configured');
     return false;
   }
-
   const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verify-email?token=${verificationToken}`;
-
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -215,7 +208,6 @@ async function sendVerificationEmail(email, verificationToken) {
       </div>
     `
   };
-
   try {
     await transporter.sendMail(mailOptions);
     console.log(`✅ Verification email sent to ${email}`);
@@ -246,11 +238,9 @@ app.post('/signup', async (req, res) => {
   if (!username || !email || !password) {
     return res.render('signup', { error: 'All fields are required.' });
   }
-
   const cleanUsername = username.trim();
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
-
   // Validation
   if (cleanUsername.length < 3 || cleanUsername.length > 30) {
     return res.render('signup', { error: 'Username must be 3–30 characters.' });
@@ -264,7 +254,6 @@ app.post('/signup', async (req, res) => {
   if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
     return res.render('signup', { error: 'Please enter a valid email.' });
   }
-
   try {
     const existing = await User.findOne({
       $or: [
@@ -279,10 +268,8 @@ app.post('/signup', async (req, res) => {
           : 'Email already in use.'
       });
     }
-
     const passwordHash = await bcrypt.hash(cleanPassword, 12);
     const verificationToken = require('crypto').randomBytes(32).toString('hex');
-
     const user = await User.create({
       username: cleanUsername,
       email: cleanEmail,
@@ -290,9 +277,7 @@ app.post('/signup', async (req, res) => {
       emailVerified: false,
       verificationToken: verificationToken
     });
-
     const emailSent = await sendVerificationEmail(cleanEmail, verificationToken);
-
     if (emailSent) {
       req.session.userId = user._id;
       req.session.user = { username: user.username };
@@ -313,30 +298,25 @@ app.post('/signup', async (req, res) => {
 
 app.get('/verify-email', async (req, res) => {
   const { token } = req.query;
-
   if (!token) {
     return res.render('verify-email', {
       error: 'Invalid verification link',
       success: false
     });
   }
-
   try {
     const user = await User.findOne({
       verificationToken: token,
       emailVerified: false
     });
-
     if (!user) {
       return res.render('verify-email', {
         error: 'Invalid or expired verification token',
         success: false
       });
     }
-
     const tokenAge = Date.now() - new Date(user.createdAt).getTime();
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
     if (tokenAge > maxAge) {
       await User.deleteOne({ _id: user._id });
       return res.render('verify-email', {
@@ -344,12 +324,10 @@ app.get('/verify-email', async (req, res) => {
         success: false
       });
     }
-
     await User.findByIdAndUpdate(user._id, {
       emailVerified: true,
       verificationToken: undefined
     });
-
     res.render('verify-email', {
       success: true,
       error: null,
@@ -373,7 +351,6 @@ app.post('/login', async (req, res) => {
   if (!usernameOrEmail || !password) {
     return res.render('login', { error: 'All fields required.' });
   }
-
   try {
     const cleanInput = usernameOrEmail.trim();
     const user = await User.findOne({
@@ -382,21 +359,17 @@ app.post('/login', async (req, res) => {
         { email: new RegExp(`^${cleanInput}$`, 'i') }
       ]
     });
-
     if (!user || !(await bcrypt.compare(password.trim(), user.passwordHash))) {
       return res.render('login', { error: 'Invalid credentials.' });
     }
-
     if (user.isBanned) {
       return res.status(403).send('🚫 You are banned.');
     }
-
     if (!user.emailVerified) {
       return res.render('login', {
         error: 'Please verify your email address before logging in.'
       });
     }
-
     req.session.userId = user._id;
     req.session.user = { username: user.username };
     res.redirect(user.discordId ? '/home' : '/link');
@@ -411,7 +384,6 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
   if (user.discordId) {
     return res.redirect('/home');
   }
-
   if (!user.linkCode) {
     try {
       const updatedUser = await User.findOneAndUpdate(
@@ -419,7 +391,6 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
         { $set: { linkCode: await User.generateUniqueLinkCode() } },
         { new: true, runValidators: true }
       );
-
       if (updatedUser) {
         user.linkCode = updatedUser.linkCode;
         console.log(`🆕 Generated linkCode for ${user.username}: ${user.linkCode}`);
@@ -432,7 +403,6 @@ app.get('/link', requireAuth, checkBan, async (req, res) => {
       user.linkCode = await User.generateUniqueLinkCode();
     }
   }
-
   res.render('link', {
     username: user.username,
     linkCode: user.linkCode,
