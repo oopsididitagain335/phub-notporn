@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
 
@@ -40,6 +41,26 @@ app.use(
     }
   })
 );
+
+// Email transporter setup
+const transporter = nodemailer.createTransporter({
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_APP_PASSWORD
+  }
+});
+
+// Verify email configuration
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ Email transport configuration error:', error);
+  } else {
+    console.log('✅ Email transport is ready');
+  }
+});
 
 // Auth Middleware
 function requireAuth(req, res, next) {
@@ -87,10 +108,15 @@ mongoose.connect(process.env.MONGO_URI, {
     await User.collection.dropIndex('discordId_1').catch(() => {});
     await User.collection.dropIndex('linkCode_1').catch(() => {});
     await User.collection.dropIndex('username_1').catch(() => {});
+    await User.collection.dropIndex('email_1').catch(() => {});
 
     await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
     await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
     await User.collection.createIndex({ username: 1 }, { 
+      unique: true, 
+      collation: { locale: 'en', strength: 2 }
+    });
+    await User.collection.createIndex({ email: 1 }, { 
       unique: true, 
       collation: { locale: 'en', strength: 2 }
     });
@@ -128,6 +154,43 @@ mongoose.connect(process.env.MONGO_URI, {
   console.error('❌ MongoDB connection error:', err.message);
   process.exit(1);
 });
+
+// Send verification email
+async function sendVerificationEmail(email, verificationToken) {
+  const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+  
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: 'Verify Your Email Address',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5; padding: 20px; border-radius: 8px;">
+        <h2 style="color: #333;">Welcome to PulseHub!</h2>
+        <p>Hello,</p>
+        <p>To complete your registration, please verify your email address by clicking the button below:</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" 
+             style="background: #6d9eeb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+            Verify Email Address
+          </a>
+        </div>
+        <p>If the button above doesn't work, copy and paste this link in your browser:</p>
+        <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
+        <p>This link will expire in 24 hours.</p>
+        <p>Best regards,<br>The PulseHub Team</p>
+      </div>
+    `
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Verification email sent to ${email}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send verification email:', error);
+    return false;
+  }
+}
 
 // Routes
 app.get('/', async (req, res) => {
@@ -185,21 +248,95 @@ app.post('/signup', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(cleanPassword, 12);
-
-    // Create user with automatic linkCode generation
+    
+    // Generate verification token
+    const verificationToken = require('crypto').randomBytes(32).toString('hex');
+    
+    // Create user with unverified status
     const user = await User.create({
       username: cleanUsername,
       email: cleanEmail,
-      passwordHash
+      passwordHash,
+      emailVerified: false,
+      verificationToken: verificationToken
     });
 
-    req.session.userId = user._id;
-    req.session.user = { username: user.username };
-
-    res.redirect('/link');
+    // Send verification email
+    const emailSent = await sendVerificationEmail(cleanEmail, verificationToken);
+    
+    if (emailSent) {
+      req.session.userId = user._id;
+      req.session.user = { username: user.username };
+      
+      res.render('verify-email-sent', { 
+        email: cleanEmail,
+        success: true,
+        error: null
+      });
+    } else {
+      // If email fails, delete the user and show error
+      await User.deleteOne({ _id: user._id });
+      res.render('signup', { error: 'Failed to send verification email. Please try again.' });
+    }
   } catch (err) {
     console.error('Signup error:', err);
     res.status(500).send('<h1>❌ Server Error</h1><p>Failed to create account.</p>');
+  }
+});
+
+app.get('/verify-email', async (req, res) => {
+  const { token } = req.query;
+  
+  if (!token) {
+    return res.render('verify-email', { 
+      error: 'Invalid verification link',
+      success: false 
+    });
+  }
+
+  try {
+    const user = await User.findOne({ 
+      verificationToken: token,
+      emailVerified: false 
+    });
+
+    if (!user) {
+      return res.render('verify-email', { 
+        error: 'Invalid or expired verification token',
+        success: false 
+      });
+    }
+
+    // Check if token is expired (24 hours)
+    const tokenAge = Date.now() - new Date(user.createdAt).getTime();
+    const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+    
+    if (tokenAge > maxAge) {
+      await User.deleteOne({ _id: user._id });
+      return res.render('verify-email', { 
+        error: 'Verification token has expired. Please sign up again.',
+        success: false 
+      });
+    }
+
+    // Verify the email
+    await User.findByIdAndUpdate(user._id, {
+      emailVerified: true,
+      verificationToken: undefined
+    });
+
+    res.render('verify-email', { 
+      success: true,
+      error: null,
+      message: 'Email verified successfully!'
+    });
+
+  } catch (err) {
+    console.error('Email verification error:', err);
+    res.render('verify-email', { 
+      error: 'An error occurred during verification',
+      success: false 
+    });
   }
 });
 
@@ -228,6 +365,13 @@ app.post('/login', async (req, res) => {
 
     if (user.isBanned) {
       return res.status(403).send('🚫 You are banned.');
+    }
+
+    // Check if email is verified
+    if (!user.emailVerified) {
+      return res.render('login', { 
+        error: 'Please verify your email address before logging in.' 
+      });
     }
 
     req.session.userId = user._id;
