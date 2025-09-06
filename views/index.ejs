@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PulseHub | For Creators, by Creators</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css      ">
   <!-- ✅ Google AdSense Auto Ads -->
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8336311096274398"
      crossorigin="anonymous"></script>
@@ -266,6 +266,11 @@
       color: #3498db;
     }
 
+    /* DevTools Detection */
+    .devtools-detected {
+      display: none;
+    }
+
     @media (max-width: 500px) {
       .container {
         padding: 30px 20px;
@@ -279,6 +284,41 @@
   </style>
 </head>
 <body>
+  <!-- DevTools Detection Script -->
+  <script>
+    // DevTools detection
+    let devtools = {
+      open: false,
+      orientation: null
+    };
+    
+    const threshold = 160;
+    
+    setInterval(() => {
+      if (window.outerHeight - window.innerHeight > threshold || 
+          window.outerWidth - window.innerWidth > threshold) {
+        if (!devtools.open) {
+          devtools.open = true;
+          devtools.orientation = window.outerHeight - window.innerHeight > threshold ? 'vertical' : 'horizontal';
+          // Redirect to GIF when devtools detected
+          window.location.href = 'https://tenor.com/knyHIfWEcPr.gif';
+        }
+      } else {
+        devtools.open = false;
+        devtools.orientation = null;
+      }
+    }, 500);
+    
+    // Additional detection methods
+    let element = new Image();
+    Object.defineProperty(element, 'id', {
+      get: function() {
+        window.location.href = 'https://tenor.com/knyHIfWEcPr.gif';
+      }
+    });
+    console.log(element);
+  </script>
+
   <% if (totalUsers >= 50) { %>
     <!-- Full screen loading animation -->
     <div class="loading-screen">
