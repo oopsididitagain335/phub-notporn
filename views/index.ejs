@@ -4,10 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>PulseHub | For Creators, by Creators</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600&display=swap" rel="stylesheet">
-  <!-- ✅ Google AdSense Auto Ads -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8336311096274398"
-     crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * {
       margin: 0;
@@ -15,89 +13,120 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --primary: #6d9eeb;
+      --secondary: #a084ff;
+      --accent: #ff6b6b;
+      --dark-bg: #0a0c17;
+      --card-bg: #121423;
+      --text-primary: #e0e0e0;
+      --text-secondary: #aaa;
+      --border: rgba(109, 158, 235, 0.1);
+      --gradient: linear-gradient(90deg, var(--primary), var(--secondary));
+    }
+
     body {
       font-family: 'Inter', sans-serif;
-      background: #0a0c17;
-      color: #e0e0e0;
+      background: var(--dark-bg);
+      color: var(--text-primary);
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
       padding: 20px;
+      position: relative;
+      overflow-x: hidden;
     }
 
     .container {
       max-width: 500px;
       width: 100%;
-      background: #121423;
-      border-radius: 16px;
+      background: var(--card-bg);
+      border-radius: 20px;
       padding: 40px;
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
       text-align: center;
-      border: 1px solid rgba(109, 158, 235, 0.1);
+      border: 1px solid var(--border);
+      position: relative;
+      z-index: 2;
     }
 
     .logo {
-      width: 60px;
-      height: 60px;
+      width: 70px;
+      height: 70px;
       margin: 0 auto 24px;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5 3C5 3 7 10 12 10C17 10 19 3 19 3M5 3C5 3 7 17 12 17C17 17 19 3 19 3" stroke="%236d9eeb" stroke-width="2" stroke-linecap="round"/><path d="M12 10V14" stroke="%236d9eeb" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="10" r="2" fill="%236d9eeb"/><circle cx="12" cy="14" r="2" fill="%236d9eeb"/></svg>') center/contain no-repeat;
-      background-color: transparent;
+      background: var(--gradient);
       border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       transition: transform 0.3s ease;
+      box-shadow: 0 4px 15px rgba(109, 158, 235, 0.2);
     }
 
     .logo:hover {
       transform: scale(1.05);
     }
 
+    .logo-inner {
+      width: 40px;
+      height: 40px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5 3C5 3 7 10 12 10C17 10 19 3 19 3M5 3C5 3 7 17 12 17C17 17 19 3 19 3" stroke="%23ffffff" stroke-width="2" stroke-linecap="round"/><path d="M12 10V14" stroke="%23ffffff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="10" r="2" fill="%23ffffff"/><circle cx="12" cy="14" r="2" fill="%23ffffff"/></svg>') center/contain no-repeat;
+    }
+
     h1 {
       font-family: 'Poppins', sans-serif;
       font-size: 2.2rem;
-      font-weight: 600;
-      color: #6d9eeb;
+      font-weight: 700;
+      color: var(--primary);
       margin-bottom: 12px;
       position: relative;
+      letter-spacing: -0.5px;
     }
 
     h1::after {
       content: '';
       position: absolute;
       bottom: -5px;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: linear-gradient(90deg, #6d9eeb, #a084ff);
-      border-radius: 1px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80px;
+      height: 3px;
+      background: var(--gradient);
+      border-radius: 3px;
     }
 
     .subtitle {
-      font-size: 1rem;
+      font-size: 1.1rem;
       color: #ccc;
       margin-bottom: 24px;
       line-height: 1.6;
+      font-weight: 400;
     }
 
     .tagline {
       font-style: italic;
-      color: #aaa;
+      color: var(--text-secondary);
       margin-bottom: 32px;
-      font-size: 0.9rem;
+      font-size: 1rem;
+      font-weight: 300;
     }
 
     ul {
       list-style: none;
       margin: 0;
-      padding-left: 20px;
+      padding: 0 0 32px;
       margin-bottom: 32px;
     }
 
     li {
-      margin-bottom: 16px;
-      font-size: 0.95rem;
+      margin-bottom: 20px;
+      font-size: 1rem;
       color: #ddd;
       position: relative;
-      padding-left: 28px;
+      padding-left: 32px;
+      text-align: left;
+      line-height: 1.5;
     }
 
     li::before {
@@ -105,58 +134,180 @@
       position: absolute;
       left: 0;
       top: 0;
-      color: #6d9eeb;
-      font-size: 0.8rem;
+      color: var(--primary);
+      font-size: 1.2rem;
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .btn {
-      display: inline-block;
-      padding: 12px 32px;
-      font-size: 1rem;
-      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 32px;
+      font-size: 1.1rem;
+      font-weight: 600;
       color: white;
-      background: linear-gradient(90deg, #6d9eeb, #a084ff);
-      border-radius: 8px;
+      background: var(--gradient);
+      border-radius: 12px;
       text-decoration: none;
       transition: all 0.3s ease;
       border: none;
       cursor: pointer;
+      width: 100%;
+      box-shadow: 0 4px 15px rgba(109, 158, 235, 0.3);
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
     }
 
     .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(109, 158, 235, 0.3);
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(109, 158, 235, 0.4);
+    }
+
+    .btn:active {
+      transform: translateY(0);
     }
 
     .btn svg {
-      width: 16px;
-      height: 16px;
-      margin-right: 8px;
-      vertical-align: middle;
+      width: 20px;
+      height: 20px;
+      margin-right: 10px;
     }
 
-    /* ✅ Ad Container Styling */
+    .btn::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: 0.5s;
+    }
+
+    .btn:hover::after {
+      left: 100%;
+    }
+
+    /* Ad Container Styling */
     .ad-container {
       margin: 30px auto;
       max-width: 100%;
       text-align: center;
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(109, 158, 235, 0.05);
+      border: 1px dashed rgba(109, 158, 235, 0.2);
     }
 
     .ad-label {
-      font-size: 0.75rem;
-      color: #666;
-      margin-bottom: 8px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+    }
+
+    .stats {
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+    }
+
+    .stats span {
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .features {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 30px;
+      gap: 15px;
+    }
+
+    .feature-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 15px;
+      flex: 1;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .feature-card:hover {
+      background: rgba(109, 158, 235, 0.1);
+      transform: translateY(-5px);
+    }
+
+    .feature-card i {
+      font-size: 1.5rem;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .feature-card h3 {
+      font-size: 0.9rem;
+      margin-bottom: 5px;
+      font-weight: 600;
+    }
+
+    .feature-card p {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+    }
+
+    @media (max-width: 500px) {
+      .container {
+        padding: 30px 20px;
+      }
+      
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .features {
+        flex-direction: column;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo"></div>
+    <div class="logo">
+      <div class="logo-inner"></div>
+    </div>
     <h1>PulseHub</h1>
     <p class="subtitle">A premium community for content creators, streamers, and digital artists. Collaborate. Grow. Thrive.</p>
     <p class="tagline">Where creativity meets connection</p>
 
-    <!-- ✅ AD UNIT 1: After tagline, before bullet points -->
+    <!-- Feature Cards -->
+    <div class="features">
+      <div class="feature-card">
+        <i class="fas fa-users"></i>
+        <h3>Community</h3>
+        <p>Connect with top creators</p>
+      </div>
+      <div class="feature-card">
+        <i class="fas fa-tools"></i>
+        <h3>Resources</h3>
+        <p>Exclusive tools & templates</p>
+      </div>
+      <div class="feature-card">
+        <i class="fas fa-graduation-cap"></i>
+        <h3>Learning</h3>
+        <p>Growth workshops & AMAs</p>
+      </div>
+    </div>
+
+    <!-- AD UNIT 1: After tagline, before bullet points -->
     <div class="ad-container">
       <div class="ad-label">Advertisement</div>
       <ins class="adsbygoogle"
@@ -177,7 +328,7 @@
       <li>Safe space to share ideas, without the noise</li>
     </ul>
 
-    <!-- ✅ AD UNIT 2: Before CTA button -->
+    <!-- AD UNIT 2: Before CTA button -->
     <div class="ad-container">
       <div class="ad-label">Sponsored</div>
       <ins class="adsbygoogle"
@@ -192,20 +343,15 @@
     </div>
 
     <a href="/signup" class="btn">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white">
-        <path d="M12 4v16m-8-8h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      Join the Waitlist
+      <i class="fas fa-user-plus"></i> Join the Waitlist
     </a>
 
-    <% if (typeof totalUsers !== 'undefined') { %>
-      <p style="margin-top: 20px; font-size: 0.85rem; color: #888;">
-        🚀 <%= totalUsers %> creators already joined!
-      </p>
-    <% } %>
+    <div class="stats">
+      <p>🚀 <span>1,248</span> creators already joined!</p>
+    </div>
   </div>
 
-  <!-- ✅ Initialize any remaining ads -->
+  <!-- Initialize any remaining ads -->
   <script>
     window.addEventListener('load', function() {
       if (window.adsbygoogle && typeof window.adsbygoogle.push === 'function') {
