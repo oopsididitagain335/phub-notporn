@@ -1,15 +1,139 @@
-<%- include('header') %>
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; border-radius: 8px; text-align: center;">
-  <h1 style="color: #333;">📧 Verification Email Sent</h1>
-  <% if (success) { %>
-    <p>A verification email has been sent to <strong><%= email %></strong>.</p>
-    <p>Please check your inbox (and spam/junk folder) for a link to verify your email address.</p>
-    <p>The link will expire in 24 hours.</p>
-  <% } else { %>
-    <p style="color: red;"><%= error %></p>
-  <% } %>
-  <p style="margin-top: 20px;">
-    <a href="/login" style="color: #6d9eeb; text-decoration: none; font-weight: bold;">← Back to Login</a>
-  </p>
-</div>
-<%- include('footer') %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Email Verification</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0c17;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      width: 100%;
+      background: #121423;
+      border-radius: 16px;
+      padding: 40px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      border: 1px solid rgba(109, 158, 235, 0.1);
+    }
+
+    .logo {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 24px;
+      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><path d="M12 3V5M12 19V21M3 12H5M19 12H21M5 3C5 3 7 10 12 10C17 10 19 3 19 3M5 3C5 3 7 17 12 17C17 17 19 3 19 3" stroke="%236d9eeb" stroke-width="2" stroke-linecap="round"/><path d="M12 10V14" stroke="%236d9eeb" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="10" r="2" fill="%236d9eeb"/><circle cx="12" cy="14" r="2" fill="%236d9eeb"/></svg>') center/contain no-repeat;
+      background-color: transparent;
+      border-radius: 50%;
+      transition: transform 0.3s ease;
+    }
+
+    .logo:hover {
+      transform: scale(1.05);
+    }
+
+    h1 {
+      font-family: 'Poppins', sans-serif;
+      font-size: 2rem;
+      font-weight: 600;
+      color: #6d9eeb;
+      margin-bottom: 12px;
+      position: relative;
+    }
+
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: linear-gradient(90deg, #6d9eeb, #a084ff);
+      border-radius: 1px;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #ccc;
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .message {
+      background: #0d0f1a;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: left;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 12px 32px;
+      font-size: 1rem;
+      font-weight: 500;
+      color: white;
+      background: linear-gradient(90deg, #6d9eeb, #a084ff);
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      margin: 10px 0;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(109, 158, 235, 0.3);
+    }
+
+    .error {
+      color: #ff6b6b;
+      margin: 10px 0;
+    }
+
+    .success {
+      color: #4ade80;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo"></div>
+    <h1>Email Verification</h1>
+    <p class="subtitle">Please check your inbox to verify your email address</p>
+    
+    <div class="message">
+      <% if (success) { %>
+        <p>We've sent a verification email to <strong><%= email %></strong>.</p>
+        <p>Please click the verification link in the email to complete your registration.</p>
+        <p>This link will expire in 24 hours.</p>
+      <% } else { %>
+        <p class="error"><%= error %></p>
+      <% } %>
+    </div>
+
+    <p class="subtitle">Didn't receive the email?</p>
+    <p>Check your spam/junk folder or contact support if you need help.</p>
+    
+    <a href="/login" class="btn">← Back to Login</a>
+  </div>
+</body>
+</html>
