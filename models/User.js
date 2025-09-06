@@ -29,6 +29,14 @@ const userSchema = new mongoose.Schema({
     unique: true,
     sparse: true // Allow documents to not have this field
   },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  verificationToken: {
+    type: String,
+    sparse: true
+  },
   isBanned: {
     type: Boolean,
     default: false
