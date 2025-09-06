@@ -80,21 +80,45 @@ mongoose.connect(process.env.MONGO_URI, {
 .then(async () => {
   console.log('✅ MongoDB connected');
 
-  // Fix sparse unique indexes
-  await User.collection.dropIndex('discordId_1').catch(() => {});
-  await User.collection.dropIndex('linkCode_1').catch(() => {});
-  
-  await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
-  await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
+  // Recreate indexes safely
+  try {
+    await User.collection.dropIndex('discordId_1').catch(() => {});
+    await User.collection.dropIndex('linkCode_1').catch(() => {});
+    await User.collection.dropIndex('username_1').catch(() => {});
 
-  console.log('✅ Sparse indexes applied');
+    await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
+    await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: false }); // ❗ No nulls allowed
+    await User.collection.createIndex({ username: 1 }, { 
+      unique: true, 
+      collation: { locale: 'en', strength: 2 } // ✅ Case-insensitive uniqueness
+    });
+
+    console.log('✅ Indexes recreated: discordId (sparse), linkCode (strict unique), username (case-insensitive)');
+
+    // ✅ FIX EXISTING NULL linkCodes
+    const usersWithNullLinkCode = await User.find({ linkCode: null });
+    for (const user of usersWithNullLinkCode) {
+      const newLinkCode = await generateUniqueLinkCode();
+      await User.updateOne(
+        { _id: user._id },
+        { $set: { linkCode: newLinkCode } }
+      );
+      console.log(`✅ Fixed user ${user.username}: assigned linkCode ${newLinkCode}`);
+    }
+    if (usersWithNullLinkCode.length > 0) {
+      console.log(`🛠️  Fixed ${usersWithNullLinkCode.length} users with null linkCode`);
+    }
+
+  } catch (err) {
+    console.error('❌ Index recreation failed:', err);
+  }
 })
 .catch(err => {
   console.error('❌ MongoDB connection error:', err.message);
   process.exit(1);
 });
 
-// Generate Unique Link Code
+// Generate Unique Link Code — NEVER returns null
 async function generateUniqueLinkCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code, exists;
@@ -104,12 +128,23 @@ async function generateUniqueLinkCode() {
       .join('');
     exists = await User.findOne({ linkCode: code });
   } while (exists);
-  return code;
+
+  if (!code || code.length !== 8) {
+    throw new Error('Failed to generate valid link code');
+  }
+
+  return code; // ✅ Guaranteed 8-char, non-null string
 }
 
 // Routes
-app.get('/', (req, res) => {
-  res.render('index');
+app.get('/', async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    res.render('index', { totalUsers });
+  } catch (err) {
+    console.error('Landing page error:', err);
+    res.status(500).send('<h1>❌ Server Error</h1><p>Please try again later.</p>');
+  }
 });
 
 app.get('/signup', (req, res) => {
@@ -126,6 +161,7 @@ app.post('/signup', async (req, res) => {
   const cleanEmail = email.trim().toLowerCase();
   const cleanPassword = password.trim();
 
+  // Validation
   if (cleanUsername.length < 3 || cleanUsername.length > 30) {
     return res.render('signup', { error: 'Username must be 3–30 characters.' });
   }
@@ -140,6 +176,9 @@ app.post('/signup', async (req, res) => {
   }
 
   try {
+    // ✅ Normalize username for case-insensitive comparison
+    const normalizedUsername = cleanUsername.toLowerCase();
+
     const existing = await User.findOne({
       $or: [
         { username: { $regex: new RegExp(`^${cleanUsername}$`, 'i') } },
@@ -149,20 +188,20 @@ app.post('/signup', async (req, res) => {
 
     if (existing) {
       return res.render('signup', { 
-        error: existing.username.toLowerCase() === cleanUsername.toLowerCase() 
+        error: existing.username.toLowerCase() === normalizedUsername 
           ? 'Username already taken.' 
           : 'Email already in use.' 
       });
     }
 
     const passwordHash = await bcrypt.hash(cleanPassword, 12);
-    const linkCode = await generateUniqueLinkCode();
+    const linkCode = await generateUniqueLinkCode(); // ✅ Guaranteed non-null
 
     const user = await User.create({
-      username: cleanUsername,
+      username: cleanUsername, // Store original casing
       email: cleanEmail,
       passwordHash,
-      linkCode
+      linkCode // ✅ Never null
     });
 
     req.session.userId = user._id;
@@ -186,10 +225,11 @@ app.post('/login', async (req, res) => {
   }
 
   try {
+    const cleanInput = usernameOrEmail.trim();
     const user = await User.findOne({
       $or: [
-        { username: { $regex: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') } },
-        { email: new RegExp(`^${usernameOrEmail.trim()}$`, 'i') }
+        { username: { $regex: new RegExp(`^${cleanInput}$`, 'i') } },
+        { email: new RegExp(`^${cleanInput}$`, 'i') }
       ]
     });
 
@@ -246,4 +286,7 @@ startBot().catch(err => console.error('❌ Bot failed to start:', err));
 // Start Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`👉 Open http://localhost:${PORT}`);
+  }
 });
