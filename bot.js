@@ -46,30 +46,44 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   try {
-    await command.execute(interaction);
+    // Check if interaction is already handled
+    if (interaction.replied || interaction.deferred) {
+      console.warn(`⚠️ Interaction already acknowledged for ${interaction.commandName}`);
+      return;
+    }
+
+    // Execute command with timeout protection
+    await Promise.race([
+      command.execute(interaction),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout')), 10000))
+    ]);
   } catch (err) {
     console.error('❌ Command execution error:', err);
 
-    // If already replied or deferred, don't reply again
+    // Prevent duplicate replies to expired interactions
     if (interaction.replied || interaction.deferred) {
       console.warn(`⚠️ Cannot send error reply: interaction already acknowledged.`);
       return;
     }
 
-    // Attempt to send error message, but catch failures (e.g. expired token)
-    await interaction.reply({
-      content: '❌ Something went wrong while executing this command.',
-      ephemeral: true
-    }).catch((replyErr) => {
-      // Ignore known safe errors
+    // Attempt to send error message with better error handling
+    try {
+      await interaction.reply({
+        content: '❌ Something went wrong while executing this command.',
+        ephemeral: true
+      });
+    } catch (replyErr) {
+      // Handle specific Discord API errors
       if (replyErr.code === 10062) {
-        console.warn('❌ Failed to reply: interaction token expired (10062).');
+        console.warn('❌ Failed to reply: interaction token expired (10062)');
       } else if (replyErr.code === 40060) {
-        console.warn('❌ Failed to reply: interaction already acknowledged (40060).');
+        console.warn('❌ Failed to reply: interaction already acknowledged (40060)');
+      } else if (replyErr.code === 40002) {
+        console.warn('❌ Failed to reply: Maximum number of reactions reached');
       } else {
         console.error('❌ Unexpected reply error:', replyErr);
       }
-    });
+    }
   }
 });
 
@@ -111,7 +125,7 @@ client.on('guildBanAdd', async (ban) => {
   }
 });
 
-// Start the bot
+// Start the bot with enhanced error handling
 function startBot() {
   if (!process.env.BOT_TOKEN) {
     throw new Error('❌ BOT_TOKEN is missing in .env');
@@ -119,6 +133,11 @@ function startBot() {
 
   return client.login(process.env.BOT_TOKEN).catch((err) => {
     console.error('❌ Failed to log in:', err);
+    // Add retry logic for better reliability
+    setTimeout(() => {
+      console.log('🔄 Retrying bot login...');
+      startBot();
+    }, 30000); // Retry after 30 seconds
   });
 }
 
