@@ -1,0 +1,15 @@
+<%- include('header') %>
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; background: #f5f5f5; border-radius: 8px; text-align: center;">
+  <h1 style="color: #333;">📧 Verification Email Sent</h1>
+  <% if (success) { %>
+    <p>A verification email has been sent to <strong><%= email %></strong>.</p>
+    <p>Please check your inbox (and spam/junk folder) for a link to verify your email address.</p>
+    <p>The link will expire in 24 hours.</p>
+  <% } else { %>
+    <p style="color: red;"><%= error %></p>
+  <% } %>
+  <p style="margin-top: 20px;">
+    <a href="/login" style="color: #6d9eeb; text-decoration: none; font-weight: bold;">← Back to Login</a>
+  </p>
+</div>
+<%- include('footer') %>
