@@ -9,7 +9,7 @@ const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000; // Updated to match logs (5000)
 
 // Validate environment variables
 const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'EMAIL_USER', 'EMAIL_APP_PASSWORD'];
@@ -89,24 +89,47 @@ mongoose.connect(process.env.MONGO_URI, {
     console.log('✅ MongoDB connected');
     // Safely manage indexes
     try {
-      // Drop existing indexes if they exist
-      await User.collection.dropIndex('discordId_1').catch(() => {});
-      await User.collection.dropIndex('linkCode_1').catch(() => {});
-      await User.collection.dropIndex('username_1').catch(() => {});
-      await User.collection.dropIndex('email_1').catch(() => {});
+      console.log('🛠️ Dropping existing indexes...');
+      // Drop existing indexes to avoid conflicts
+      const indexes = ['discordId_1', 'linkCode_1', 'username_1', 'email_1'];
+      for (const index of indexes) {
+        try {
+          await User.collection.dropIndex(index);
+          console.log(`✅ Dropped index: ${index}`);
+        } catch (err) {
+          if (err.codeName !== 'IndexNotFound') {
+            console.error(`⚠️ Error dropping index ${index}:`, err.message);
+          }
+        }
+      }
 
+      console.log('🛠️ Creating new indexes...');
       // Create indexes with consistent options
-      await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
-      await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
+      await User.collection.createIndex(
+        { discordId: 1 },
+        { unique: true, sparse: true, name: 'discordId_1' }
+      );
+      await User.collection.createIndex(
+        { linkCode: 1 },
+        { unique: true, sparse: true, name: 'linkCode_1' }
+      );
       await User.collection.createIndex(
         { username: 1 },
-        { unique: true, collation: { locale: 'en', strength: 2 } }
+        {
+          unique: true,
+          collation: { locale: 'en', strength: 2 },
+          name: 'username_1'
+        }
       );
       await User.collection.createIndex(
         { email: 1 },
-        { unique: true, collation: { locale: 'en', strength: 2 } }
+        {
+          unique: true,
+          collation: { locale: 'en', strength: 2 },
+          name: 'email_1'
+        }
       );
-      console.log('✅ Indexes created successfully');
+      console.log('✅ All indexes created successfully');
 
       // Fix users with null linkCode
       console.log('🛠️ Checking for users with null linkCode...');
@@ -168,7 +191,7 @@ async function sendVerificationEmail(email, verificationToken) {
     return false;
   }
 
-  const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
+  const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verify-email?token=${verificationToken}`;
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
