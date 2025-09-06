@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Terms of Service - <%= companyName || 'pulsehub' %></title>
+  <style>
+    :root{--bg:#0b0d11;--card:#0f1318;--text:#e6e9ef;--muted:#98a0b0;--accent:#7c5cff}
+    html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,Arial,sans-serif}
+    .container{max-width:980px;margin:28px auto;padding:28px;background:var(--card);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45)}
+    h1{font-size:2rem;margin:0 0 6px;text-align:center}
+    h2{font-size:1.1rem;color:#cfd6e4;margin-top:22px}
+    p,li{color:var(--text);font-size:0.98rem}
+    .muted{color:var(--muted);font-size:.9rem}
+    .callout{background:#0d1220;border:1px solid #1f2540;padding:12px;border-radius:10px;margin:12px 0}
+    a{color:var(--accent)}
+    ul{padding-left:20px}
+    .rule{border-top:1px solid #232a38;margin:18px 0}
+    code{background:#0d1116;padding:2px 6px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Terms of Service — <%= companyName || 'pulsehub' %></h1>
+    <p class="muted" style="text-align:center">Domain: <strong><%= websiteUrl || 'pulsehub.space' %></strong> · Last updated: <%= lastUpdated || (new Date()).toISOString().slice(0,10) %></p>
+
+    <div class="callout"><strong>Security & Abuse:</strong> Any attempt to damage, disrupt, exploit, or gain unauthorised access to the Service will be logged (including IPs, device headers, and activity metadata). We may disclose logs to relevant UK authorities, affected parties, and exercise civil remedies where permitted by law. Responsible security disclosures should go to <a href="mailto:<%= securityEmail || 'security@pulsehub.space' %>"><%= securityEmail || 'security@pulsehub.space' %></a>.</div>
+
+    <p>These Terms of Service ("Terms") govern your use of the online services, sites, apps, APIs and related offerings operated by <strong><%= companyEntity || 'PulseHub Ltd' %></strong> ("PulseHub", "we", "us", "our"). By creating an account, using the Service, or accessing content you accept and agree to these Terms and our Privacy Policy.</p>
+
+    <h2>1. Definitions</h2>
+    <p>"User Content" means any content you submit. "Consumer User" means an individual using the Service for personal purposes. "Business User" means a user acting for commercial, professional or business purposes, including where signing up on behalf of an entity. "Dispute" means any claim, controversy, or disagreement arising out of or relating to these Terms or the Service.</p>
+
+    <h2>2. Eligibility & accounts</h2>
+    <ul>
+      <li>Minimum age 13. If under 18 you must have parental/legal guardian consent.</li>
+      <li>Provide accurate registration info and keep it current. You are responsible for all activity under your account.</li>
+      <li>We reserve the right to verify identity and suspend accounts where verification fails or abuse is suspected.</li>
+    </ul>
+
+    <h2>3. Acceptable use, security and abuse</h2>
+    <p>Prohibited actions include hacking, distributed denial-of-service, malware, unauthorised scraping, circumvention of rate limits, account takeovers, doxxing, harassment, and posting illegal or infringing material. Automated access requires prior written permission.</p>
+    <p>We may implement technical controls (rate limits, device fingerprinting, CAPTCHAs), monitor activity, and take coordinated actions (suspension, IP blocks, legal referrals) where necessary.</p>
+
+    <h2>4. User Content</h2>
+    <h3>4.1 Licence</h3>
+    <p>By posting User Content you grant PulseHub a worldwide, non-exclusive, sublicensable, transferable, royalty-free license to reproduce, distribute, modify, publicly display, adapt, translate and otherwise use the content to provide, promote, and improve the Service, including syndication to partners. You remain the rights holder.</p>
+    <h3>4.2 Responsibilities</h3>
+    <p>You warrant your content is lawful and that you hold necessary rights and consents. You must not post content that violates privacy, intellectual property, or rights of others, or exploits minors.</p>
+
+    <h2>5. Moderation, takedowns and appeals</h2>
+    <p>We may remove content that violates these Terms or law. For IP complaints, send notices to <a href="mailto:<%= legalEmail || 'legal@pulsehub.space' %>"><%= legalEmail || 'legal@pulsehub.space' %></a> with details. We provide an internal appeals channel at <a href="mailto:<%= supportEmail || 'support@pulsehub.space' %>"><%= supportEmail || 'support@pulsehub.space' %></a> — decisions on moderation are final subject to applicable law.</p>
+
+    <h2>6. Third-party services and integrations</h2>
+    <p>Third-party links and integrations are provided "as is" and are governed by their terms. We are not responsible for third-party acts or omissions.</p>
+
+    <h2>7. Payments, subscriptions & refunds</h2>
+    <p>Paid features are billed in <%= currencySymbol || '£' %>. Subscriptions auto-renew until cancelled. Consumer statutory rights (e.g., refund rights) apply and are not excluded; where you waive certain cancellation rights (e.g., by immediate access to digital content) this will be clearly disclosed at purchase.</p>
+
+    <h2>8. Data protection & security</h2>
+    <p>We process personal data under UK GDPR and the Data Protection Act 2018 per our Privacy Policy. Responsible security testing requires written permission; vulnerability disclosures should be sent to <a href="mailto:<%= securityEmail || 'security@pulsehub.space' %>"><%= securityEmail || 'security@pulsehub.space' %></a>.</p>
+
+    <h2>9. Warranties & disclaimers</h2>
+    <p>The Service is provided "as is". We disclaim all warranties to the fullest extent permitted by law. Nothing in these Terms excludes liability for death or personal injury caused by our negligence or for fraudulent misrepresentation.</p>
+
+    <h2>10. Limitation of liability</h2>
+    <p>Except where prohibited by law, we exclude liability for: indirect, special, consequential, or punitive damages; loss of profit, business, revenue, goodwill, or data. Our aggregate liability for claims arising out of or related to these Terms shall be limited to the greater of (a) the fees you paid to us in the 6 months preceding the claim, or (b) <strong><%= liabilityFloor || '£100' %> for Consumer Users</strong> and <strong><%= liabilityFloorBusiness || '£5,000' %> for Business Users</strong>. This cap does not apply to liability that cannot be limited by law.</p>
+
+    <h2>11. Indemnities and legal costs (revised)</h2>
+    <h3>11.1 Scope</h3>
+    <p><strong>Between Users:</strong> PulseHub is not a party to disputes between users (e.g., contracts, competitions, IP disputes between two users). If one user sues another user, PulseHub will not be involved and will not pay either party's legal costs in that private dispute except as required by law.</p>
+
+    <h3>11.2 When you must indemnify PulseHub</h3>
+    <p><strong>Business Users</strong> agree to indemnify, defend and hold harmless PulseHub and its officers, directors, employees and agents from and against all losses, damages, liabilities, fines and reasonable legal fees arising out of:</p>
+    <ul>
+      <li>Your breach of these Terms, representations or warranties;</li>
+      <li>Your User Content that infringes or misappropriates third-party rights;</li>
+      <li>Your misuse of the Service or illegal conduct; or</li>
+      <li>Claims arising from your integrations, bots, or commercial activities on the Service.</li>
+    </ul>
+    <p>This indemnity is subject to a configurable cap of <strong><%= indemnityCapBusiness || '£25,000' %></strong> in aggregate, unless otherwise agreed in writing.</p>
+
+    <h3>11.3 Legal costs where a claim is brought against PulseHub</h3>
+    <p>If a claimant brings a claim directly against PulseHub and the claim is finally dismissed, withdrawn, or decided in PulseHub's favour, then:</p>
+    <ul>
+      <li><strong>Business Users:</strong> the claimant (if a Business User) agrees to reimburse PulseHub's reasonable legal costs and expenses incurred in defending the claim, up to the indemnity cap set above.</li>
+      <li><strong>Consumer Users:</strong> to the extent permitted by applicable consumer protection law, a consumer claimant who brings an unreasonable or frivolous action may be ordered by a court or tribunal to pay PulseHub's costs. We will not seek to contractually require consumers to cover our costs beyond what consumer law allows.</li>
+    </ul>
+    <p>PulseHub will use reasonable efforts to mitigate costs and will notify the allegedly liable party promptly of any claim subject to indemnity. We shall not settle any claim in a manner that admits fault or requires payment by the indemnifying party without their consent (not to be unreasonably withheld).</p>
+
+    <h2>12. Suspension, termination and effect</h2>
+    <p>We may suspend or terminate accounts for violation, risk, non-payment, or if required by law. On termination, licences you granted survive as necessary for backups and fraud prevention. Surviving clauses include IP, indemnity, liability limits, arbitration/dispute provisions and data retention obligations.</p>
+
+    <h2>13. Governing law, forum and arbitration (push for arbitration)</h2>
+    <h3>13.1 Governing law</h3>
+    <p>These Terms are governed by the laws of <%= governingLawRegion || 'England and Wales' %>. Non-contractual obligations shall also be governed by the same law.</p>
+
+    <h3>13.2 Arbitration policy</h3>
+    <p>We strongly prefer to resolve disputes by arbitration to reduce cost and delay. The following sets out the mechanism we will push for:</p>
+    <ul>
+      <li><strong>Business-to-Business:</strong> All disputes between PulseHub and Business Users shall be finally resolved by arbitration administered by the <%= arbitrationProvider || 'LCIA' %> under its rules, by a sole arbitrator appointed in accordance with those rules, seated in London, England, and conducted in English. The decision shall be final and binding. The arbitrator may award costs; PulseHub reserves the right to recover reasonable costs and legal fees up to the Indemnity Cap where the claim is frivolous or dismissed.</li>
+      <li><strong>Consumers:</strong> For Consumer Users domiciled in the UK, before commencing formal proceedings you are encouraged to use our internal dispute resolution and then alternative dispute resolution (ADR) providers such as <%= consumerADR || 'CMA approved ADR providers / CEDR' %>. Nothing in this clause prevents consumers from bringing claims in small claims court or other courts where statute requires.</li>
+      <li><strong>Opt-in arbitration for consumers:</strong> Where consumer law allows, consumers may opt into arbitration in London (CEDR/LCIA) for faster resolution; you will be asked to confirm such opt-in during account creation for contracts where arbitration is appropriate.</li>
+    </ul>
+    <p>For both business and consumer arbitrations, the seat of arbitration and chosen rules shall apply; injunctive relief to protect IP or urgent rights may be sought in courts prior to or in parallel with arbitration.</p>
+
+    <h2>14. Export, sanctions and anti-corruption</h2>
+    <p>You must not use the Service in breach of applicable export, sanctions or anti-corruption laws. You warrant you are not located in or under sanctions and will comply with the UK Bribery Act 2010.</p>
+
+    <h2>15. Minors and age appropriate design</h2>
+    <p>We apply the ICO's Age Appropriate Design Code and may restrict features for under‑18s. Parents may contact us to exercise data rights for minors.</p>
+
+    <h2>16. API, automation & scraping</h2>
+    <p>API access is governed by separate developer terms. Scraping or automated access without permission is prohibited. We will use technical and legal measures to protect the Service.</p>
+
+    <h2>17. Changes to these Terms</h2>
+    <p>We may update these Terms. For material changes we will provide at least 30 days' notice where practicable. Continued use after changes indicates acceptance.</p>
+
+    <h2>18. Assignment and corporate events</h2>
+    <p>We may assign these Terms in connection with a merger, sale, or reorganisation. You may not assign your rights without our consent, except to a permitted successor in interest.</p>
+
+    <h2>19. Severability, entire agreement and miscellaneous</h2>
+    <ul>
+      <li>Entire agreement: these Terms plus our Privacy Policy, API terms and any order forms.</li>
+      <li>Severability: invalid provisions will be replaced with enforceable provisions nearest to the original intent.</li>
+      <li>No waiver unless in writing signed by us.</li>
+    </ul>
+
+    <div class="rule"></div>
+    <h2>Contact & corporate details</h2>
+    <p>
+      <strong><%= companyEntity || 'PulseHub Ltd' %></strong><br/>
+      Registered office: <%= registeredOffice || 'TBD, United Kingdom' %><br/>
+      Company no: <%= companyNumber || 'TBD' %> · VAT: <%= vatNumber || 'TBD' %> · ICO: <%= icoRegNumber || 'TBD' %><br/>
+      Support: <a href="mailto:<%= supportEmail || 'support@pulsehub.space' %>"><%= supportEmail || 'support@pulsehub.space' %></a><br/>
+      Legal: <a href="mailto:<%= legalEmail || 'legal@pulsehub.space' %>"><%= legalEmail || 'legal@pulsehub.space' %></a><br/>
+      Security: <a href="mailto:<%= securityEmail || 'security@pulsehub.space' %>"><%= securityEmail || 'security@pulsehub.space' %></a>
+    </p>
+
+  </div>
+</body>
+</html>
