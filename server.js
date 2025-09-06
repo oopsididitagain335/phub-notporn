@@ -5,12 +5,19 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
-const nodemailer = require('nodemailer'); // This should work correctly
+const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Validate environment variables
+const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'EMAIL_USER', 'EMAIL_APP_PASSWORD'];
+const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
+if (missingEnvVars.length > 0) {
+  console.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
+  process.exit(1);
+}
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -30,7 +37,7 @@ const sessionStore = MongoStore.create({
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || 'supersecret_dev_secret_change_in_prod',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
@@ -73,72 +80,65 @@ async function checkBan(req, res, next) {
   next();
 }
 
-// MongoDB Connection with Enhanced Error Handling
+// MongoDB Connection
 mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
 })
-.then(async () => {
-  console.log('✅ MongoDB connected');
+  .then(async () => {
+    console.log('✅ MongoDB connected');
+    // Safely manage indexes
+    try {
+      // Drop existing indexes if they exist
+      await User.collection.dropIndex('discordId_1').catch(() => {});
+      await User.collection.dropIndex('linkCode_1').catch(() => {});
+      await User.collection.dropIndex('username_1').catch(() => {});
+      await User.collection.dropIndex('email_1').catch(() => {});
 
-  // Recreate indexes safely
-  try {
-    await User.collection.dropIndex('discordId_1').catch(() => {});
-    await User.collection.dropIndex('linkCode_1').catch(() => {});
-    await User.collection.dropIndex('username_1').catch(() => {});
-    await User.collection.dropIndex('email_1').catch(() => {});
+      // Create indexes with consistent options
+      await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
+      await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
+      await User.collection.createIndex(
+        { username: 1 },
+        { unique: true, collation: { locale: 'en', strength: 2 } }
+      );
+      await User.collection.createIndex(
+        { email: 1 },
+        { unique: true, collation: { locale: 'en', strength: 2 } }
+      );
+      console.log('✅ Indexes created successfully');
 
-    await User.collection.createIndex({ discordId: 1 }, { unique: true, sparse: true });
-    await User.collection.createIndex({ linkCode: 1 }, { unique: true, sparse: true });
-    await User.collection.createIndex({ username: 1 }, { 
-      unique: true, 
-      collation: { locale: 'en', strength: 2 }
-    });
-    await User.collection.createIndex({ email: 1 }, { 
-      unique: true, 
-      collation: { locale: 'en', strength: 2 }
-    });
+      // Fix users with null linkCode
+      console.log('🛠️ Checking for users with null linkCode...');
+      const nullUsers = await User.find({ linkCode: null });
+      console.log(`Found ${nullUsers.length} users with null linkCode`);
 
-    console.log('✅ Indexes recreated');
-
-    // FIX ALL EXISTING NULL linkCodes - CRITICAL FIX
-    console.log('🛠️  Checking for users with null linkCode...');
-    
-    const nullUsers = await User.find({ linkCode: null });
-    console.log(`Found ${nullUsers.length} users with null linkCode`);
-    
-    for (const user of nullUsers) {
-      try {
-        // Generate new unique code using the static method
-        const newCode = await User.generateUniqueLinkCode();
-        
-        await User.updateOne(
-          { _id: user._id },
-          { $set: { linkCode: newCode } }
-        );
-        console.log(`✅ Fixed user ${user.username}: assigned linkCode ${newCode}`);
-      } catch (updateErr) {
-        console.error(`❌ Failed to fix user ${user.username}:`, updateErr.message);
+      for (const user of nullUsers) {
+        try {
+          const newCode = await User.generateUniqueLinkCode();
+          await User.updateOne(
+            { _id: user._id },
+            { $set: { linkCode: newCode } }
+          );
+          console.log(`✅ Fixed user ${user.username}: assigned linkCode ${newCode}`);
+        } catch (updateErr) {
+          console.error(`❌ Failed to fix user ${user.username}:`, updateErr.message);
+        }
       }
+      console.log('✅ Legacy null linkCode users processed');
+    } catch (err) {
+      console.error('❌ Index creation error:', err);
     }
+  })
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
+  });
 
-    console.log('✅ Legacy null linkCode users processed');
-
-  } catch (err) {
-    console.error('❌ Index recreation or migration error:', err);
-  }
-})
-.catch(err => {
-  console.error('❌ MongoDB connection error:', err.message);
-  process.exit(1);
-});
-
-// Email transporter setup - FIXED VERSION
+// Email transporter setup
 let transporter;
 try {
-  transporter = nodemailer.createTransporter({
+  transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
     port: 587,
     secure: false,
@@ -147,7 +147,7 @@ try {
       pass: process.env.EMAIL_APP_PASSWORD
     }
   });
-  
+
   // Verify email configuration
   transporter.verify((error, success) => {
     if (error) {
@@ -167,9 +167,9 @@ async function sendVerificationEmail(email, verificationToken) {
     console.error('❌ Email transporter not configured');
     return false;
   }
-  
+
   const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
-  
+
   const mailOptions = {
     from: process.env.EMAIL_USER,
     to: email,
@@ -180,7 +180,7 @@ async function sendVerificationEmail(email, verificationToken) {
         <p>Hello,</p>
         <p>To complete your registration, please verify your email address by clicking the button below:</p>
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${verificationUrl}" 
+          <a href="${verificationUrl}"
              style="background: #6d9eeb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
             Verify Email Address
           </a>
@@ -249,9 +249,8 @@ app.post('/signup', async (req, res) => {
         { email: cleanEmail }
       ]
     });
-
     if (existing) {
-      return res.render('signup', { 
+      return res.render('signup', {
         error: existing.username.toLowerCase() === cleanUsername.toLowerCase()
           ? 'Username already taken.'
           : 'Email already in use.'
@@ -259,11 +258,8 @@ app.post('/signup', async (req, res) => {
     }
 
     const passwordHash = await bcrypt.hash(cleanPassword, 12);
-    
-    // Generate verification token
     const verificationToken = require('crypto').randomBytes(32).toString('hex');
-    
-    // Create user with unverified status
+
     const user = await User.create({
       username: cleanUsername,
       email: cleanEmail,
@@ -272,20 +268,17 @@ app.post('/signup', async (req, res) => {
       verificationToken: verificationToken
     });
 
-    // Send verification email
     const emailSent = await sendVerificationEmail(cleanEmail, verificationToken);
-    
+
     if (emailSent) {
       req.session.userId = user._id;
       req.session.user = { username: user.username };
-      
-      res.render('verify-email-sent', { 
+      res.render('verify-email-sent', {
         email: cleanEmail,
         success: true,
         error: null
       });
     } else {
-      // If email fails, delete the user and show error
       await User.deleteOne({ _id: user._id });
       res.render('signup', { error: 'Failed to send verification email. Please try again.' });
     }
@@ -297,56 +290,53 @@ app.post('/signup', async (req, res) => {
 
 app.get('/verify-email', async (req, res) => {
   const { token } = req.query;
-  
+
   if (!token) {
-    return res.render('verify-email', { 
+    return res.render('verify-email', {
       error: 'Invalid verification link',
-      success: false 
+      success: false
     });
   }
 
   try {
-    const user = await User.findOne({ 
+    const user = await User.findOne({
       verificationToken: token,
-      emailVerified: false 
+      emailVerified: false
     });
 
     if (!user) {
-      return res.render('verify-email', { 
+      return res.render('verify-email', {
         error: 'Invalid or expired verification token',
-        success: false 
+        success: false
       });
     }
 
-    // Check if token is expired (24 hours)
     const tokenAge = Date.now() - new Date(user.createdAt).getTime();
     const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-    
+
     if (tokenAge > maxAge) {
       await User.deleteOne({ _id: user._id });
-      return res.render('verify-email', { 
+      return res.render('verify-email', {
         error: 'Verification token has expired. Please sign up again.',
-        success: false 
+        success: false
       });
     }
 
-    // Verify the email
     await User.findByIdAndUpdate(user._id, {
       emailVerified: true,
       verificationToken: undefined
     });
 
-    res.render('verify-email', { 
+    res.render('verify-email', {
       success: true,
       error: null,
       message: 'Email verified successfully!'
     });
-
   } catch (err) {
     console.error('Email verification error:', err);
-    res.render('verify-email', { 
+    res.render('verify-email', {
       error: 'An error occurred during verification',
-      success: false 
+      success: false
     });
   }
 });
@@ -378,16 +368,14 @@ app.post('/login', async (req, res) => {
       return res.status(403).send('🚫 You are banned.');
     }
 
-    // Check if email is verified
     if (!user.emailVerified) {
-      return res.render('login', { 
-        error: 'Please verify your email address before logging in.' 
+      return res.render('login', {
+        error: 'Please verify your email address before logging in.'
       });
     }
 
     req.session.userId = user._id;
     req.session.user = { username: user.username };
-
     res.redirect(user.discordId ? '/home' : '/link');
   } catch (err) {
     console.error('Login error:', err);
@@ -397,32 +385,27 @@ app.post('/login', async (req, res) => {
 
 app.get('/link', requireAuth, checkBan, async (req, res) => {
   const user = res.locals.user;
-
   if (user.discordId) {
     return res.redirect('/home');
   }
 
-  // Ensure user has a linkCode using atomic operation
   if (!user.linkCode) {
     try {
-      // Use atomic update to prevent race conditions
       const updatedUser = await User.findOneAndUpdate(
         { _id: user._id, linkCode: { $exists: false } },
         { $set: { linkCode: await User.generateUniqueLinkCode() } },
         { new: true, runValidators: true }
       );
-      
+
       if (updatedUser) {
         user.linkCode = updatedUser.linkCode;
         console.log(`🆕 Generated linkCode for ${user.username}: ${user.linkCode}`);
       } else {
-        // If another process already set it, fetch the existing one
         const freshUser = await User.findById(user._id);
         user.linkCode = freshUser.linkCode;
       }
     } catch (err) {
       console.error('Failed to generate linkCode:', err);
-      // Fallback to direct generation
       user.linkCode = await User.generateUniqueLinkCode();
     }
   }
