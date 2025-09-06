@@ -8,7 +8,7 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
-const fs = require('fs'); // Added for dynamic route generation
+const fs = require('fs'); // Required for dynamic routes
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -488,73 +488,26 @@ app.post('/logout', requireAuth, (req, res) => {
   });
 });
 
-// --- DYNAMIC EJS ROUTES ---
+// --- ✅ DYNAMIC EJS ROUTES (FIXED VERSION) ---
 // Automatically generate routes for .ejs files in views/
 const viewsPath = path.join(__dirname, 'views');
 const existingRoutes = [
   '/', '/signup', '/login', '/link', '/home',
   '/verify-email', '/logout', '/verify-email-sent'
-]; // Add any other manually defined routes here to avoid conflicts
+];
 
-fs.readdir(viewsPath, (err, files) => {
-  if (err) {
-    console.error('❌ Error reading views directory:', err);
-    return;
-  }
+console.log('🔧 Scanning views directory for dynamic routes...');
 
+try {
+  const files = fs.readdirSync(viewsPath);
   files.forEach(file => {
-    if (file.endsWith('.ejs')) {
-      const routeName = '/' + file.slice(0, -4); // Remove '.ejs' to get route name
+    if (file.endsWith('.ejs') && !file.startsWith('_')) { // Skip partials like _header.ejs
+      const routeName = '/' + file.slice(0, -4); // e.g., tos.ejs → /tos
 
       // Skip if route already manually defined
       if (existingRoutes.includes(routeName)) {
+        console.log(`⚠️ Skipping ${routeName} — already manually defined.`);
         return;
       }
 
-      // Register dynamic route
-      app.get(routeName, async (req, res) => {
-        try {
-          const renderData = {
-            devtoolsDetectionScript
-          };
-
-          // If user is logged in and not banned, add user data to template
-          if (req.session && req.session.userId) {
-            try {
-              const user = await User.findById(req.session.userId);
-              if (user && !user.isBanned) {
-                renderData.user = user;
-              }
-            } catch (err) {
-              console.warn('User fetch error in dynamic route:', err.message);
-            }
-          }
-
-          res.render(file.slice(0, -4), renderData);
-        } catch (err) {
-          console.error(`Error rendering ${file}:`, err);
-          res.status(500).send('<h1>❌ Server Error</h1><p>Failed to load page.</p>');
-        }
-      });
-
-      console.log(`✅ Auto-generated route: ${routeName} -> ${file}`);
-    }
-  });
-});
-// --- END DYNAMIC EJS ROUTES ---
-
-// 404
-app.use((req, res) => {
-  res.status(404).send('<h1>🔍 Page Not Found</h1><a href="/">← Home</a>');
-});
-
-// Start Discord Bot
-startBot().catch(err => console.error('❌ Bot failed to start:', err));
-
-// Start Server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`👉 Open http://localhost:${PORT}`);
-  }
-});
+      // Register dynamic 
