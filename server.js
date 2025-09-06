@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
-const nodemailer = require('nodemailer');
+const nodemailer = require('nodemailer'); // This should work correctly
 const { startBot } = require('./bot');
 const User = require('./models/User');
 
@@ -41,26 +41,6 @@ app.use(
     }
   })
 );
-
-// Email transporter setup
-const transporter = nodemailer.createTransporter({
-  host: 'smtp.gmail.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_APP_PASSWORD
-  }
-});
-
-// Verify email configuration
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('❌ Email transport configuration error:', error);
-  } else {
-    console.log('✅ Email transport is ready');
-  }
-});
 
 // Auth Middleware
 function requireAuth(req, res, next) {
@@ -155,8 +135,39 @@ mongoose.connect(process.env.MONGO_URI, {
   process.exit(1);
 });
 
+// Email transporter setup - FIXED VERSION
+let transporter;
+try {
+  transporter = nodemailer.createTransporter({
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_APP_PASSWORD
+    }
+  });
+  
+  // Verify email configuration
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('❌ Email transport configuration error:', error);
+    } else {
+      console.log('✅ Email transport is ready');
+    }
+  });
+} catch (error) {
+  console.error('❌ Failed to create email transporter:', error);
+  transporter = null;
+}
+
 // Send verification email
 async function sendVerificationEmail(email, verificationToken) {
+  if (!transporter) {
+    console.error('❌ Email transporter not configured');
+    return false;
+  }
+  
   const verificationUrl = `${process.env.BASE_URL || 'http://localhost:3000'}/verify-email?token=${verificationToken}`;
   
   const mailOptions = {
