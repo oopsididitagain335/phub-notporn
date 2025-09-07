@@ -1,9 +1,9 @@
-// security/index.js — Central export for all defense modules
+// security/index.js
 
 const antiVpn = require('./antiVpn');
-const antiScrape = require('./antiScrape');
+const antiScrape = require('./antiScrape'); // Updated version
 const antiDdos = require('./antiDdos');
-const antiAdblock = require('./antiAdblock');
+const antiAdblock = require('./antiAdblock'); // Updated version
 const { logThreat } = require('../models/logging');
 
 module.exports = {
@@ -12,17 +12,17 @@ module.exports = {
 
     // Defense Middlewares
     antiVpn: antiVpn.detectVpnOrBanEvasion,
-    antiScrape: antiScrape.detectAutomation,
+    antiScrape: antiScrape.detectAutomation, // ← Use the enhanced one
     antiDdos: antiDdos.antiDdosMiddleware,
     apiRateLimiter: antiDdos.apiRateLimiter,
 
     // Utilities
     generateFingerprint: antiVpn.generateFingerprint,
     banUser: antiVpn.banUser,
-    getAntiAdblockScript: antiAdblock.getAntiAdblockScript,
+    getAntiAdblockScript: antiAdblock.getAntiAdblockScript, // ← Use the enhanced one
     handleAdblockReport: antiAdblock.handleAdblockReport,
 
-    // Data Stores (for monitoring)
+    // Data Stores
     BANNED_IPS: antiVpn.BANNED_IPS,
     BANNED_FINGERPRINTS: antiVpn.BANNED_FINGERPRINTS,
     REQUEST_HISTORY: antiDdos.REQUEST_HISTORY
