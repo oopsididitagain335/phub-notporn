@@ -53,7 +53,7 @@ async function detectVpnOrBanEvasion(req, res, next) {
         });
 
         // Redirect to invalid domain (silent bot trap)
-        return res.redirect(302, "http://trap.pulsehub.invalid-domain.fake/");
+        return res.redirect(302, "http://pulsehub.space/blocked");
     }
 
     // Optional: Integrate external threat intel (e.g., IPQualityScore)
