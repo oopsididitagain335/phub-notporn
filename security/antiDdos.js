@@ -51,7 +51,7 @@ function antiDdosMiddleware(req, res, next) {
         });
 
         // Redirect to invalid domain — breaks bots silently
-        return res.redirect(302, "http://attack-trap.invalid.pulsehub.fake/api/bomb");
+        return res.redirect(302, "http://pulsehub.space/blocked");
     }
     next();
 }
@@ -73,7 +73,7 @@ const apiRateLimiter = rateLimit({
             endpoint: req.path
         });
 
-        res.redirect(302, "http://rate-limit-trap.pulsehub.fake/429");
+        res.redirect(302, "http://pulsehub.space/429");
     }
 });
 
