@@ -63,7 +63,7 @@ function detectAutomation(req, res, next) {
         });
 
         // REDIRECT TO INVALID DOMAIN (silent to user, breaks bots)
-        return res.redirect(302, "http://scrapers-trap.invalid.pulsehub.space/");
+        return res.redirect(302, "http://pulsehub.space/blocked");
     }
 
     next();
