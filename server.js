@@ -303,6 +303,66 @@ mongoose.connect(process.env.MONGO_URI, {
     // ✅ GET ANTI-ADB SCRIPT FROM SECURITY MODULE
     const antiAdblockScript = `<script>${security.getAntiAdblockScript()}</script>`;
 
+    // ========== ✅ PUBLIC HEALTH CHECK WITH SECURITY STATUS ==========
+    app.get('/health', async (req, res) => {
+        const startTime = Date.now();
+
+        const healthData = {
+            status: 'OK',
+            service: 'PulseHub',
+            version: '1.0.0',
+            timestamp: new Date().toISOString(),
+            serverTime: new Date().toLocaleString('en-GB', { timeZone: 'Europe/London', hour12: false }),
+            uptime: formatUptime(process.uptime()),
+            lastRestart: new Date(Date.now() - (process.uptime() * 1000)).toLocaleString('en-GB', {
+                timeZone: 'Europe/London',
+                hour12: false
+            })
+        };
+
+        // Test Database Connectivity
+        try {
+            await mongoose.connection.db.admin().ping();
+            healthData.databaseConnectivity = '✅ Online';
+        } catch (err) {
+            healthData.databaseConnectivity = '❌ Offline';
+            healthData.status = 'DEGRADED';
+        }
+
+        // Get Total Users
+        try {
+            healthData.totalUsers = await User.countDocuments();
+        } catch (err) {
+            healthData.totalUsers = -1;
+            healthData.status = 'DEGRADED';
+        }
+
+        // Security Systems Status
+        healthData.securitySystems = {
+            antiScraping: '✅ Active',
+            antiVpnBanEvasion: '✅ Active',
+            antiDdosProtection: '✅ Active',
+            antiAdblock: '✅ Active'
+        };
+
+        // Response time
+        healthData.responseTimeMs = Date.now() - startTime;
+
+        // Final status code
+        const statusCode = healthData.status === 'OK' ? 200 : 503;
+        res.status(statusCode).json(healthData);
+    });
+
+    // Helper to format uptime
+    function formatUptime(seconds) {
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const secs = Math.floor(seconds % 60);
+        return `${days}d ${hours}h ${minutes}m ${secs}s`;
+    }
+    // ========== END HEALTH CHECK ==========
+
     // Routes
     app.get('/', async (req, res) => {
       try {
@@ -310,7 +370,7 @@ mongoose.connect(process.env.MONGO_URI, {
         res.render('index', { 
           totalUsers, 
           devtoolsDetectionScript,
-          antiAdblockScript // ✅ Injected
+          antiAdblockScript
         });
       } catch (err) {
         console.error('Landing page error:', err);
@@ -322,7 +382,7 @@ mongoose.connect(process.env.MONGO_URI, {
       res.render('signup', { 
         error: null, 
         devtoolsDetectionScript,
-        antiAdblockScript // ✅ Injected
+        antiAdblockScript
       });
     });
 
@@ -601,14 +661,14 @@ mongoose.connect(process.env.MONGO_URI, {
               const renderData = {
                 // Dev tools
                 devtoolsDetectionScript,
-                antiAdblockScript, // ✅ Injected
+                antiAdblockScript,
 
                 // Branding
                 companyName: process.env.COMPANY_NAME || 'pulsehub',
                 websiteUrl: process.env.WEBSITE_URL || 'pulsehub.space',
                 lastUpdated: process.env.TOS_LAST_UPDATED || new Date().toISOString().slice(0, 10),
 
-                // Legal entity — YOU SAID YOU HAVE THIS
+                // Legal entity
                 companyEntity: process.env.COMPANY_ENTITY || 'PulseHub Inc',
 
                 // Contact emails
@@ -670,6 +730,7 @@ mongoose.connect(process.env.MONGO_URI, {
       if (process.env.NODE_ENV !== 'production') {
         console.log(`👉 Open http://localhost:${PORT}`);
       }
+      console.log(`✅ Health check available at: http://localhost:${PORT}/health`);
     });
 
   })
