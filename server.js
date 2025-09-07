@@ -9,6 +9,7 @@ const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
 const fs = require('fs');
+
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -478,7 +479,7 @@ mongoose.connect(process.env.MONGO_URI, {
       });
     });
 
-    // --- ✅ DYNAMIC EJS ROUTES (Now with ToS-safe variables) ---
+    // --- ✅ FIXED: DYNAMIC EJS ROUTES — Passes ALL variables to prevent crashes ---
     const viewsPath = path.join(__dirname, 'views');
     const existingRoutes = [
       '/', '/signup', '/login', '/link', '/home',
@@ -500,14 +501,37 @@ mongoose.connect(process.env.MONGO_URI, {
 
           app.get(routeName, async (req, res) => {
             try {
+              // ✅ CRITICAL FIX: Pass ALL variables used in tos.ejs
               const renderData = {
+                // Dev tools
                 devtoolsDetectionScript,
-                companyName: 'pulsehub',
+
+                // Branding
+                companyName: process.env.COMPANY_NAME || 'pulsehub',
                 websiteUrl: process.env.WEBSITE_URL || 'pulsehub.space',
                 lastUpdated: process.env.TOS_LAST_UPDATED || new Date().toISOString().slice(0, 10),
-                securityEmail: process.env.SECURITY_EMAIL || 'security@pulsehub.space'
+
+                // Legal entity — YOU SAID YOU HAVE THIS
+                companyEntity: process.env.COMPANY_ENTITY || 'PulseHub Inc',
+
+                // Contact emails
+                securityEmail: process.env.SECURITY_EMAIL || 'security@pulsehub.space',
+                legalEmail: process.env.LEGAL_EMAIL || 'legal@pulsehub.space',
+                supportEmail: process.env.SUPPORT_EMAIL || 'support@pulsehub.space',
+
+                // Financial & liability
+                currencySymbol: process.env.CURRENCY_SYMBOL || '£',
+                liabilityFloor: process.env.LIABILITY_FLOOR || '£100',
+                liabilityFloorBusiness: process.env.LIABILITY_FLOOR_BUSINESS || '£5,000',
+                indemnityCapBusiness: process.env.INDEMNITY_CAP_BUSINESS || '£25,000',
+
+                // Legal jurisdiction
+                governingLawRegion: process.env.GOVERNING_LAW_REGION || 'England and Wales',
+                arbitrationProvider: process.env.ARBITRATION_PROVIDER || 'LCIA',
+                consumerADR: process.env.CONSUMER_ADR || 'CMA approved ADR providers / CEDR'
               };
 
+              // Add user if logged in
               if (req.session && req.session.userId) {
                 try {
                   const user = await User.findById(req.session.userId);
@@ -519,6 +543,7 @@ mongoose.connect(process.env.MONGO_URI, {
                 }
               }
 
+              // Render the page
               res.render(file.slice(0, -4), renderData);
             } catch (err) {
               console.error(`❌ Failed to render ${file}:`, err);
