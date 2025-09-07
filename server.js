@@ -55,6 +55,25 @@ app.use(
   })
 );
 
+// ========== ✅ BLOCKED PAGE ROUTE (REPLACES FAKE DOMAINS) ==========
+app.get('/blocked', (req, res) => {
+    res.status(403).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Access Denied</title></head>
+        <body style="font-family: Arial; text-align: center; padding: 50px; background: #111; color: #fff;">
+            <h1 style="color: #ff4d4d;">🚫 Access Denied</h1>
+            <p>Automated access or suspicious behavior detected.</p>
+            <p>This action has been logged.</p>
+            <p style="margin-top: 30px; font-size: 14px; color: #aaa;">
+                Contact support if you believe this is an error.
+            </p>
+        </body>
+        </html>
+    `);
+});
+// ========== END BLOCKED PAGE ==========
+
 // ========== ✅ APPLY SECURITY MIDDLEWARE HERE ==========
 
 // 1. Anti-DDoS & Rate Limiting (applies to all routes)
@@ -731,6 +750,7 @@ mongoose.connect(process.env.MONGO_URI, {
         console.log(`👉 Open http://localhost:${PORT}`);
       }
       console.log(`✅ Health check available at: http://localhost:${PORT}/health`);
+      console.log(`✅ Blocked page at: http://localhost:${PORT}/blocked`);
     });
 
   })
