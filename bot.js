@@ -1,7 +1,9 @@
-// bot.js
-const { Client, Collection, GatewayIntentBits } = require('discord.js');
+// bot.js — with PulseHub Health Monitor
+
+const { Client, Collection, GatewayIntentBits, EmbedBuilder } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
+const axios = require('axios');
 require('dotenv').config();
 
 const client = new Client({
@@ -14,7 +16,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Load commands from /commands folder
+// Load commands
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
 
@@ -30,12 +32,15 @@ for (const file of commandFiles) {
 }
 
 // Ready event
-client.once('ready', () => {
+client.once('ready', async () => {
   console.log(`🤖 ${client.user.tag} is ready!`);
   console.log(`🌍 Serving ${client.guilds.cache.size} server(s).`);
+
+  // ✅ START HEALTH MONITOR AFTER BOT IS READY
+  startHealthMonitor(client);
 });
 
-// Interaction handler (slash commands)
+// Interaction handler
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -46,13 +51,11 @@ client.on('interactionCreate', async (interaction) => {
   }
 
   try {
-    // Check if interaction is already handled
     if (interaction.replied || interaction.deferred) {
       console.warn(`⚠️ Interaction already acknowledged for ${interaction.commandName}`);
       return;
     }
 
-    // Execute command with timeout protection
     await Promise.race([
       command.execute(interaction),
       new Promise((_, reject) => setTimeout(() => reject(new Error('Command timeout')), 10000))
@@ -60,20 +63,17 @@ client.on('interactionCreate', async (interaction) => {
   } catch (err) {
     console.error('❌ Command execution error:', err);
 
-    // Prevent duplicate replies to expired interactions
     if (interaction.replied || interaction.deferred) {
       console.warn(`⚠️ Cannot send error reply: interaction already acknowledged.`);
       return;
     }
 
-    // Attempt to send error message with better error handling
     try {
       await interaction.reply({
         content: '❌ Something went wrong while executing this command.',
         ephemeral: true
       });
     } catch (replyErr) {
-      // Handle specific Discord API errors
       if (replyErr.code === 10062) {
         console.warn('❌ Failed to reply: interaction token expired (10062)');
       } else if (replyErr.code === 40060) {
@@ -87,7 +87,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-// Sync bans from Discord to your database
+// Sync bans from Discord
 client.on('guildBanAdd', async (ban) => {
   try {
     const user = ban.user;
@@ -106,7 +106,7 @@ client.on('guildBanAdd', async (ban) => {
 
     let reason = 'No reason provided';
     try {
-      const audit = await guild.fetchAuditLogs({ limit: 1, type: 22 }); // 22 = MEMBER_BAN_ADD
+      const audit = await guild.fetchAuditLogs({ limit: 1, type: 22 });
       const log = audit.entries.first();
       if (log && log.target.id === user.id) {
         reason = log.reason || reason;
@@ -125,7 +125,84 @@ client.on('guildBanAdd', async (ban) => {
   }
 });
 
-// Start the bot with enhanced error handling
+// ✅ PULSEHUB HEALTH MONITOR
+async function startHealthMonitor(botClient) {
+    const HEALTH_URL = 'https://pulsehub.space/health';
+    const CHANNEL_ID = '1414055520477777981'; // Your logging channel
+    const CHECK_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+    const channel = await botClient.channels.fetch(CHANNEL_ID).catch(err => {
+        console.error('❌ Could not find health log channel:', err.message);
+        return null;
+    });
+
+    if (!channel) {
+        console.error('❌ Health monitor disabled — channel not found');
+        return;
+    }
+
+    console.log(`✅ PulseHub Health Monitor started → logging to #${channel.name || CHANNEL_ID}`);
+
+    async function checkHealth() {
+        try {
+            const startTime = Date.now();
+            const res = await axios.get(HEALTH_URL, { timeout: 8000 });
+            const data = res.data;
+            const responseTime = Date.now() - startTime;
+
+            const statusEmoji = data.status === 'OK' ? '🟢' : '🔴';
+            const dbEmoji = data.databaseConnectivity.includes('✅') ? '🟢' : '🔴';
+            const secEmoji = Object.values(data.securitySystems).every(s => s.includes('✅')) ? '🟢' : '🟡';
+
+            const embed = new EmbedBuilder()
+                .setTitle(`${statusEmoji} PulseHub System Status`)
+                .setColor(data.status === 'OK' ? 0x00ff00 : 0xff0000)
+                .addFields(
+                    { name: 'Status', value: `\`${data.status}\``, inline: true },
+                    { name: 'Response Time', value: `\`${responseTime}ms\``, inline: true },
+                    { name: 'Uptime', value: `\`${data.uptime}\``, inline: true },
+                    { name: 'Database', value: `${dbEmoji} ${data.databaseConnectivity}`, inline: false },
+                    { name: 'Security Systems', value: `${secEmoji} All Active`, inline: false },
+                    { name: 'Total Users', value: `\`${data.totalUsers.toLocaleString()}\``, inline: true },
+                    { name: 'Last Checked', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true }
+                )
+                .setFooter({ text: 'PulseHub Health Monitor' })
+                .setTimestamp();
+
+            await channel.send({ embeds: [embed] });
+            console.log(`✅ Health check passed — posted to Discord`);
+
+        } catch (err) {
+            console.error('❌ Health check failed:', err.message);
+
+            const errorEmbed = new EmbedBuilder()
+                .setTitle('🔴 PulseHub Health Check FAILED')
+                .setColor(0xff0000)
+                .setDescription(`Could not reach \`${HEALTH_URL}\`\n\`\`\`${err.message}\`\`\``)
+                .addFields(
+                    { name: 'Error Code', value: err.code || 'UNKNOWN', inline: true },
+                    { name: 'Timestamp', value: `<t:${Math.floor(Date.now() / 1000)}:R>`, inline: true }
+                )
+                .setFooter({ text: 'PulseHub Health Monitor - Auto Retry in 15min' })
+                .setTimestamp();
+
+            try {
+                await channel.send({ embeds: [errorEmbed] });
+                console.log('✅ Health failure alert posted to Discord');
+            } catch (sendErr) {
+                console.error('❌ Failed to send health alert to Discord:', sendErr.message);
+            }
+        }
+    }
+
+    // Run first check immediately
+    await checkHealth();
+
+    // Then run every X minutes
+    setInterval(checkHealth, CHECK_INTERVAL);
+}
+
+// Start the bot
 function startBot() {
   if (!process.env.BOT_TOKEN) {
     throw new Error('❌ BOT_TOKEN is missing in .env');
@@ -133,15 +210,14 @@ function startBot() {
 
   return client.login(process.env.BOT_TOKEN).catch((err) => {
     console.error('❌ Failed to log in:', err);
-    // Add retry logic for better reliability
     setTimeout(() => {
       console.log('🔄 Retrying bot login...');
       startBot();
-    }, 30000); // Retry after 30 seconds
+    }, 30000);
   });
 }
 
-// Add process monitoring
+// Process monitoring
 process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
