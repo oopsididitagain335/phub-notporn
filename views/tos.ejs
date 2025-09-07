@@ -10,13 +10,18 @@
     .container{max-width:980px;margin:28px auto;padding:28px;background:var(--card);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.45)}
     h1{font-size:2rem;margin:0 0 6px;text-align:center}
     h2{font-size:1.1rem;color:#cfd6e4;margin-top:22px}
-    p,li{color:var(--text);font-size:0.98rem}
+    p,li{color:var(--text);font-size:0.98rem;line-height:1.6}
     .muted{color:var(--muted);font-size:.9rem}
     .callout{background:#0d1220;border:1px solid #1f2540;padding:12px;border-radius:10px;margin:12px 0}
-    a{color:var(--accent)}
-    ul{padding-left:20px}
+    a{color:var(--accent);text-decoration:none}
+    a:hover{text-decoration:underline}
+    ul{padding-left:20px;margin:12px 0}
     .rule{border-top:1px solid #232a38;margin:18px 0}
-    code{background:#0d1116;padding:2px 6px;border-radius:6px}
+    code{background:#0d1116;padding:2px 6px;border-radius:6px;font-family:monospace}
+    @media (max-width: 768px) {
+      .container{margin:10px;padding:16px;}
+      h1{font-size:1.5rem;}
+    }
   </style>
 </head>
 <body>
@@ -26,7 +31,7 @@
 
     <div class="callout"><strong>Security & Abuse:</strong> Any attempt to damage, disrupt, exploit, or gain unauthorised access to the Service will be logged (including IPs, device headers, and activity metadata). We may disclose logs to relevant UK authorities, affected parties, and exercise civil remedies where permitted by law. Responsible security disclosures should go to <a href="mailto:<%= securityEmail || 'security@pulsehub.space' %>"><%= securityEmail || 'security@pulsehub.space' %></a>.</div>
 
-    <p>These Terms of Service ("Terms") govern your use of the online services, sites, apps, APIs and related offerings operated by <strong><%= companyEntity || 'PulseHub Ltd' %></strong> ("PulseHub", "we", "us", "our"). By creating an account, using the Service, or accessing content you accept and agree to these Terms and our Privacy Policy.</p>
+    <p>These Terms of Service ("Terms") govern your use of the online services, sites, apps, APIs and related offerings operated by <strong><%= companyEntity || 'PulseHub Inc' %></strong> ("PulseHub", "we", "us", "our"). By creating an account, using the Service, or accessing content you accept and agree to these Terms and our Privacy Policy.</p>
 
     <h2>1. Definitions</h2>
     <p>"User Content" means any content you submit. "Consumer User" means an individual using the Service for personal purposes. "Business User" means a user acting for commercial, professional or business purposes, including where signing up on behalf of an entity. "Dispute" means any claim, controversy, or disagreement arising out of or relating to these Terms or the Service.</p>
@@ -127,14 +132,11 @@
     </ul>
 
     <div class="rule"></div>
-    <h2>Contact & corporate details</h2>
+    <h2>Contact</h2>
     <p>
-      <strong><%= companyEntity || 'PulseHub Ltd' %></strong><br/>
-      Registered office: <%= registeredOffice || 'TBD, United Kingdom' %><br/>
-      Company no: <%= companyNumber || 'TBD' %> · VAT: <%= vatNumber || 'TBD' %> · ICO: <%= icoRegNumber || 'TBD' %><br/>
-      Support: <a href="mailto:<%= supportEmail || 'support@pulsehub.space' %>"><%= supportEmail || 'support@pulsehub.space' %></a><br/>
-      Legal: <a href="mailto:<%= legalEmail || 'legal@pulsehub.space' %>"><%= legalEmail || 'legal@pulsehub.space' %></a><br/>
-      Security: <a href="mailto:<%= securityEmail || 'security@pulsehub.space' %>"><%= securityEmail || 'security@pulsehub.space' %></a>
+      For support: <a href="mailto:<%= supportEmail || 'support@pulsehub.space' %>"><%= supportEmail || 'support@pulsehub.space' %></a><br/>
+      For legal inquiries: <a href="mailto:<%= legalEmail || 'legal@pulsehub.space' %>"><%= legalEmail || 'legal@pulsehub.space' %></a><br/>
+      For security issues: <a href="mailto:<%= securityEmail || 'security@pulsehub.space' %>"><%= securityEmail || 'security@pulsehub.space' %></a>
     </p>
 
   </div>
