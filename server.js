@@ -8,6 +8,11 @@ const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
 const { startBot } = require('./bot');
 const User = require('./models/User');
+
+// ✅ IMPORT SECURITY MODULES
+const security = require('./security'); // security/index.js
+const { logThreat } = require('./models/logging');
+
 const fs = require('fs');
 
 const app = express();
@@ -50,6 +55,25 @@ app.use(
   })
 );
 
+// ========== ✅ APPLY SECURITY MIDDLEWARE HERE ==========
+
+// 1. Anti-DDoS & Rate Limiting (applies to all routes)
+app.use(security.antiDdos);
+
+// 2. Anti-VPN / Ban Evasion (uses fingerprinting)
+app.use(security.antiVpn);
+
+// 3. Anti-Scraping (blocks headless browsers)
+app.use(security.antiScrape);
+
+// 4. Rate limiter for API routes
+app.use('/api/*', security.apiRateLimiter);
+
+// 5. Handle Adblock Reports
+app.post('/api/report-adblock', security.handleAdblockReport);
+
+// ========== END SECURITY MIDDLEWARE ==========
+
 // Auth Middleware
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.redirect('/login');
@@ -65,6 +89,17 @@ async function checkBan(req, res, next) {
         return res.redirect('/login');
       }
       if (user.isBanned) {
+        // ✅ Log ban evasion attempt if user is banned but still accessing
+        await logThreat({
+          ip: req.clientIp || 'unknown',
+          fingerprint: req.fingerprint || 'unknown',
+          userAgent: req.get('User-Agent'),
+          reason: 'ban_evasion',
+          actionTaken: 'blocked',
+          endpoint: req.path,
+          meta: { userId: user._id.toString(), username: user.username }
+        });
+
         req.session.destroy(() => {});
         return res.status(403).send(`
           <h1>🚫 You Are Banned</h1>
@@ -265,11 +300,18 @@ mongoose.connect(process.env.MONGO_URI, {
     </script>
     `;
 
+    // ✅ GET ANTI-ADB SCRIPT FROM SECURITY MODULE
+    const antiAdblockScript = `<script>${security.getAntiAdblockScript()}</script>`;
+
     // Routes
     app.get('/', async (req, res) => {
       try {
         const totalUsers = await User.countDocuments();
-        res.render('index', { totalUsers, devtoolsDetectionScript });
+        res.render('index', { 
+          totalUsers, 
+          devtoolsDetectionScript,
+          antiAdblockScript // ✅ Injected
+        });
       } catch (err) {
         console.error('Landing page error:', err);
         res.status(500).send('<h1>❌ Server Error</h1><p>Please try again later.</p>');
@@ -277,28 +319,52 @@ mongoose.connect(process.env.MONGO_URI, {
     });
 
     app.get('/signup', (req, res) => {
-      res.render('signup', { error: null, devtoolsDetectionScript });
+      res.render('signup', { 
+        error: null, 
+        devtoolsDetectionScript,
+        antiAdblockScript // ✅ Injected
+      });
     });
 
     app.post('/signup', async (req, res) => {
       const { username, email, password } = req.body;
       if (!username || !email || !password) {
-        return res.render('signup', { error: 'All fields are required.', devtoolsDetectionScript });
+        return res.render('signup', { 
+          error: 'All fields are required.', 
+          devtoolsDetectionScript,
+          antiAdblockScript
+        });
       }
       const cleanUsername = username.trim();
       const cleanEmail = email.trim().toLowerCase();
       const cleanPassword = password.trim();
       if (cleanUsername.length < 3 || cleanUsername.length > 30) {
-        return res.render('signup', { error: 'Username must be 3–30 characters.', devtoolsDetectionScript });
+        return res.render('signup', { 
+          error: 'Username must be 3–30 characters.', 
+          devtoolsDetectionScript,
+          antiAdblockScript
+        });
       }
       if (cleanPassword.length < 6) {
-        return res.render('signup', { error: 'Password must be at least 6 characters.', devtoolsDetectionScript });
+        return res.render('signup', { 
+          error: 'Password must be at least 6 characters.', 
+          devtoolsDetectionScript,
+          antiAdblockScript
+        });
       }
       if (!/^[\w.-]+$/.test(cleanUsername)) {
-        return res.render('signup', { error: 'Username can only contain letters, numbers, _, ., and -', devtoolsDetectionScript });
+        return res.render('signup', { 
+          error: 'Username can only contain letters, numbers, _, ., and -', 
+          devtoolsDetectionScript,
+          antiAdblockScript
+        });
       }
       if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
-        return res.render('signup', { error: 'Please enter a valid email.', devtoolsDetectionScript });
+        return res.render('signup', { 
+          error: 'Please enter a valid email.', 
+          devtoolsDetectionScript,
+          antiAdblockScript
+        });
       }
       try {
         const existing = await User.findOne({
@@ -312,7 +378,8 @@ mongoose.connect(process.env.MONGO_URI, {
             error: existing.username.toLowerCase() === cleanUsername.toLowerCase()
               ? 'Username already taken.'
               : 'Email already in use.',
-            devtoolsDetectionScript
+            devtoolsDetectionScript,
+            antiAdblockScript
           });
         }
         const passwordHash = await bcrypt.hash(cleanPassword, 12);
@@ -332,11 +399,16 @@ mongoose.connect(process.env.MONGO_URI, {
             email: cleanEmail,
             success: true,
             error: null,
-            devtoolsDetectionScript
+            devtoolsDetectionScript,
+            antiAdblockScript
           });
         } else {
           await User.deleteOne({ _id: user._id });
-          res.render('signup', { error: 'Failed to send verification email. Please try again.', devtoolsDetectionScript });
+          res.render('signup', { 
+            error: 'Failed to send verification email. Please try again.', 
+            devtoolsDetectionScript,
+            antiAdblockScript
+          });
         }
       } catch (err) {
         console.error('Signup error:', err);
@@ -350,7 +422,8 @@ mongoose.connect(process.env.MONGO_URI, {
         return res.render('verify-email', {
           error: 'Invalid verification link',
           success: false,
-          devtoolsDetectionScript
+          devtoolsDetectionScript,
+          antiAdblockScript
         });
       }
       try {
@@ -362,7 +435,8 @@ mongoose.connect(process.env.MONGO_URI, {
           return res.render('verify-email', {
             error: 'Invalid or expired verification token',
             success: false,
-            devtoolsDetectionScript
+            devtoolsDetectionScript,
+            antiAdblockScript
           });
         }
         const tokenAge = Date.now() - new Date(user.createdAt).getTime();
@@ -372,7 +446,8 @@ mongoose.connect(process.env.MONGO_URI, {
           return res.render('verify-email', {
             error: 'Verification token has expired. Please sign up again.',
             success: false,
-            devtoolsDetectionScript
+            devtoolsDetectionScript,
+            antiAdblockScript
           });
         }
         await User.findByIdAndUpdate(user._id, {
@@ -383,26 +458,36 @@ mongoose.connect(process.env.MONGO_URI, {
           success: true,
           error: null,
           message: 'Email verified successfully!',
-          devtoolsDetectionScript
+          devtoolsDetectionScript,
+          antiAdblockScript
         });
       } catch (err) {
         console.error('Email verification error:', err);
         res.render('verify-email', {
           error: 'An error occurred during verification',
           success: false,
-          devtoolsDetectionScript
+          devtoolsDetectionScript,
+          antiAdblockScript
         });
       }
     });
 
     app.get('/login', (req, res) => {
-      res.render('login', { error: null, devtoolsDetectionScript });
+      res.render('login', { 
+        error: null, 
+        devtoolsDetectionScript,
+        antiAdblockScript
+      });
     });
 
     app.post('/login', async (req, res) => {
       const { usernameOrEmail, password } = req.body;
       if (!usernameOrEmail || !password) {
-        return res.render('login', { error: 'All fields required.', devtoolsDetectionScript });
+        return res.render('login', { 
+          error: 'All fields required.', 
+          devtoolsDetectionScript,
+          antiAdblockScript
+        });
       }
       try {
         const cleanInput = usernameOrEmail.trim();
@@ -413,7 +498,11 @@ mongoose.connect(process.env.MONGO_URI, {
           ]
         });
         if (!user || !(await bcrypt.compare(password.trim(), user.passwordHash))) {
-          return res.render('login', { error: 'Invalid credentials.', devtoolsDetectionScript });
+          return res.render('login', { 
+            error: 'Invalid credentials.', 
+            devtoolsDetectionScript,
+            antiAdblockScript
+          });
         }
         if (user.isBanned) {
           return res.status(403).send('🚫 You are banned.');
@@ -421,7 +510,8 @@ mongoose.connect(process.env.MONGO_URI, {
         if (!user.emailVerified) {
           return res.render('login', {
             error: 'Please verify your email address before logging in.',
-            devtoolsDetectionScript
+            devtoolsDetectionScript,
+            antiAdblockScript
           });
         }
         req.session.userId = user._id;
@@ -461,7 +551,8 @@ mongoose.connect(process.env.MONGO_URI, {
         username: user.username,
         linkCode: user.linkCode,
         inviteUrl: 'https://discord.gg/MmDs5ees4S',
-        devtoolsDetectionScript
+        devtoolsDetectionScript,
+        antiAdblockScript
       });
     });
 
@@ -469,7 +560,12 @@ mongoose.connect(process.env.MONGO_URI, {
       const user = res.locals.user;
       if (!user.discordId) return res.redirect('/link');
       const totalUsers = await User.countDocuments();
-      res.render('home', { user, totalUsers, devtoolsDetectionScript });
+      res.render('home', { 
+        user, 
+        totalUsers, 
+        devtoolsDetectionScript,
+        antiAdblockScript
+      });
     });
 
     app.post('/logout', requireAuth, (req, res) => {
@@ -505,6 +601,7 @@ mongoose.connect(process.env.MONGO_URI, {
               const renderData = {
                 // Dev tools
                 devtoolsDetectionScript,
+                antiAdblockScript, // ✅ Injected
 
                 // Branding
                 companyName: process.env.COMPANY_NAME || 'pulsehub',
