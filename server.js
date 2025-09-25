@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const bcrypt = require('bcrypt');
-const nodemailer = require('nodemailer');
+// ❌ REMOVED: nodemailer (no email verification)
 const { startBot } = require('./bot');
 const User = require('./models/User');
 
@@ -19,7 +19,8 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Validate environment variables
-const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'EMAIL_USER', 'EMAIL_APP_PASSWORD', 'DISCORD_TOKEN'];
+// ⚠️ You can now optionally remove EMAIL_USER & EMAIL_APP_PASSWORD if not used elsewhere
+const requiredEnvVars = ['MONGO_URI', 'SESSION_SECRET', 'DISCORD_TOKEN'];
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 if (missingEnvVars.length > 0) {
   console.error(`❌ Missing required environment variables: ${missingEnvVars.join(', ')}`);
@@ -55,7 +56,7 @@ app.use(
   })
 );
 
-// ========== ✅ BLOCKED PAGE ROUTE (REPLACES FAKE DOMAINS) ==========
+// ========== ✅ BLOCKED PAGE ROUTE ==========
 app.get('/blocked', (req, res) => {
     res.status(403).send(`
         <!DOCTYPE html>
@@ -72,28 +73,15 @@ app.get('/blocked', (req, res) => {
         </html>
     `);
 });
-// ========== END BLOCKED PAGE ==========
 
-// ========== ✅ APPLY SECURITY MIDDLEWARE HERE ==========
-
-// 1. Anti-DDoS & Rate Limiting (applies to all routes)
+// ========== ✅ APPLY SECURITY MIDDLEWARE ==========
 app.use(security.antiDdos);
-
-// 2. Anti-VPN / Ban Evasion (uses fingerprinting)
 app.use(security.antiVpn);
-
-// 3. Anti-Scraping (blocks headless browsers)
 app.use(security.antiScrape);
-
-// 4. Rate limiter for API routes
 app.use('/api/*', security.apiRateLimiter);
-
-// 5. Handle Adblock Reports
 app.post('/api/report-adblock', security.handleAdblockReport);
 
-// ========== END SECURITY MIDDLEWARE ==========
-
-// Auth Middleware
+// ========== AUTH MIDDLEWARE ==========
 function requireAuth(req, res, next) {
   if (!req.session.userId) return res.redirect('/login');
   next();
@@ -108,7 +96,6 @@ async function checkBan(req, res, next) {
         return res.redirect('/login');
       }
       if (user.isBanned) {
-        // ✅ Log ban evasion attempt if user is banned but still accessing
         await logThreat({
           ip: req.clientIp || 'unknown',
           fingerprint: req.fingerprint || 'unknown',
@@ -118,7 +105,6 @@ async function checkBan(req, res, next) {
           endpoint: req.path,
           meta: { userId: user._id.toString(), username: user.username }
         });
-
         req.session.destroy(() => {});
         return res.status(403).send(`
           <h1>🚫 You Are Banned</h1>
@@ -135,7 +121,7 @@ async function checkBan(req, res, next) {
   next();
 }
 
-// MongoDB Connection
+// ========== MONGODB CONNECTION ==========
 mongoose.connect(process.env.MONGO_URI, {
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
@@ -143,7 +129,7 @@ mongoose.connect(process.env.MONGO_URI, {
   .then(async () => {
     console.log('✅ MongoDB connected');
 
-    // Manage indexes robustly
+    // Manage indexes (unchanged)
     try {
       console.log('🛠️ Ensuring indexes...');
       const desiredIndexes = [
@@ -200,7 +186,7 @@ mongoose.connect(process.env.MONGO_URI, {
       }
       console.log('✅ All indexes verified and updated');
 
-      // Fix users with null linkCode
+      // Fix null linkCode (unchanged)
       console.log('🛠️ Checking for users with null linkCode...');
       const nullUsers = await User.find({ linkCode: null });
       console.log(`Found ${nullUsers.length} users with null linkCode`);
@@ -221,80 +207,13 @@ mongoose.connect(process.env.MONGO_URI, {
       console.error('❌ Index management error:', err);
     }
 
-    // Email transporter setup
-    let transporter;
-    try {
-      transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_APP_PASSWORD
-        }
-      });
-      transporter.verify((error, success) => {
-        if (error) {
-          console.error('❌ Email transport configuration error:', error);
-        } else {
-          console.log('✅ Email transport is ready');
-        }
-      });
-    } catch (error) {
-      console.error('❌ Failed to create email transporter:', error);
-      transporter = null;
-    }
+    // ❌ REMOVED: nodemailer setup & sendVerificationEmail function
 
-    // Send verification email
-    async function sendVerificationEmail(email, verificationToken) {
-      if (!transporter) {
-        console.error('❌ Email transporter not configured');
-        return false;
-      }
-      const verificationUrl = `${process.env.BASE_URL || 'http://localhost:5000'}/verify-email?token=${verificationToken}`;
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'Verify Your Email Address',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5; padding: 20px; border-radius: 8px;">
-            <h2 style="color: #333;">Welcome to PulseHub!</h2>
-            <p>Hello,</p>
-            <p>To complete your registration, please verify your email address by clicking the button below:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${verificationUrl}"
-                 style="background: #6d9eeb; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                Verify Email Address
-              </a>
-            </div>
-            <p>If the button above doesn't work, copy and paste this link in your browser:</p>
-            <p style="word-break: break-all; color: #666;">${verificationUrl}</p>
-            <p>This link will expire in 24 hours.</p>
-            <p>Best regards,<br>The PulseHub Team</p>
-          </div>
-        `
-      };
-      try {
-        await transporter.sendMail(mailOptions);
-        console.log(`✅ Verification email sent to ${email}`);
-        return true;
-      } catch (error) {
-        console.error('❌ Failed to send verification email:', error);
-        return false;
-      }
-    }
-
-    // DevTools detection script
+    // DevTools detection script (unchanged)
     const devtoolsDetectionScript = `
     <script>
-      // DevTools detection
-      let devtools = {
-        open: false,
-        orientation: null
-      };
-      
+      let devtools = { open: false, orientation: null };
       const threshold = 160;
-      
       setInterval(() => {
         if (window.outerHeight - window.innerHeight > threshold || 
             window.outerWidth - window.innerWidth > threshold) {
@@ -308,7 +227,6 @@ mongoose.connect(process.env.MONGO_URI, {
           devtools.orientation = null;
         }
       }, 500);
-      
       let element = new Image();
       Object.defineProperty(element, 'id', {
         get: function() {
@@ -319,13 +237,11 @@ mongoose.connect(process.env.MONGO_URI, {
     </script>
     `;
 
-    // ✅ GET ANTI-ADB SCRIPT FROM SECURITY MODULE
     const antiAdblockScript = `<script>${security.getAntiAdblockScript()}</script>`;
 
-    // ========== ✅ PUBLIC HEALTH CHECK WITH SECURITY STATUS ==========
+    // ========== HEALTH CHECK ==========
     app.get('/health', async (req, res) => {
         const startTime = Date.now();
-
         const healthData = {
             status: 'OK',
             service: 'PulseHub',
@@ -339,7 +255,6 @@ mongoose.connect(process.env.MONGO_URI, {
             })
         };
 
-        // Test Database Connectivity
         try {
             await mongoose.connection.db.admin().ping();
             healthData.databaseConnectivity = '✅ Online';
@@ -348,7 +263,6 @@ mongoose.connect(process.env.MONGO_URI, {
             healthData.status = 'DEGRADED';
         }
 
-        // Get Total Users
         try {
             healthData.totalUsers = await User.countDocuments();
         } catch (err) {
@@ -356,7 +270,6 @@ mongoose.connect(process.env.MONGO_URI, {
             healthData.status = 'DEGRADED';
         }
 
-        // Security Systems Status
         healthData.securitySystems = {
             antiScraping: '✅ Active',
             antiVpnBanEvasion: '✅ Active',
@@ -364,15 +277,11 @@ mongoose.connect(process.env.MONGO_URI, {
             antiAdblock: '✅ Active'
         };
 
-        // Response time
         healthData.responseTimeMs = Date.now() - startTime;
-
-        // Final status code
         const statusCode = healthData.status === 'OK' ? 200 : 503;
         res.status(statusCode).json(healthData);
     });
 
-    // Helper to format uptime
     function formatUptime(seconds) {
         const days = Math.floor(seconds / 86400);
         const hours = Math.floor((seconds % 86400) / 3600);
@@ -380,9 +289,9 @@ mongoose.connect(process.env.MONGO_URI, {
         const secs = Math.floor(seconds % 60);
         return `${days}d ${hours}h ${minutes}m ${secs}s`;
     }
-    // ========== END HEALTH CHECK ==========
 
-    // Routes
+    // ========== ROUTES ==========
+
     app.get('/', async (req, res) => {
       try {
         const totalUsers = await User.countDocuments();
@@ -405,6 +314,7 @@ mongoose.connect(process.env.MONGO_URI, {
       });
     });
 
+    // ✅ UPDATED: Signup without email verification
     app.post('/signup', async (req, res) => {
       const { username, email, password } = req.body;
       if (!username || !email || !password) {
@@ -462,94 +372,26 @@ mongoose.connect(process.env.MONGO_URI, {
           });
         }
         const passwordHash = await bcrypt.hash(cleanPassword, 12);
-        const verificationToken = require('crypto').randomBytes(32).toString('hex');
+        // ✅ Create user WITHOUT email verification fields
         const user = await User.create({
           username: cleanUsername,
           email: cleanEmail,
-          passwordHash,
-          emailVerified: false,
-          verificationToken: verificationToken
+          passwordHash
+          // emailVerified & verificationToken REMOVED
         });
-        const emailSent = await sendVerificationEmail(cleanEmail, verificationToken);
-        if (emailSent) {
-          req.session.userId = user._id;
-          req.session.user = { username: user.username };
-          res.render('verify-email-sent', {
-            email: cleanEmail,
-            success: true,
-            error: null,
-            devtoolsDetectionScript,
-            antiAdblockScript
-          });
-        } else {
-          await User.deleteOne({ _id: user._id });
-          res.render('signup', { 
-            error: 'Failed to send verification email. Please try again.', 
-            devtoolsDetectionScript,
-            antiAdblockScript
-          });
-        }
+
+        req.session.userId = user._id;
+        req.session.user = { username: user.username };
+        // ✅ Redirect to Discord linking immediately
+        res.redirect('/link');
+
       } catch (err) {
         console.error('Signup error:', err);
         res.status(500).send('<h1>❌ Server Error</h1><p>Failed to create account.</p>');
       }
     });
 
-    app.get('/verify-email', async (req, res) => {
-      const { token } = req.query;
-      if (!token) {
-        return res.render('verify-email', {
-          error: 'Invalid verification link',
-          success: false,
-          devtoolsDetectionScript,
-          antiAdblockScript
-        });
-      }
-      try {
-        const user = await User.findOne({
-          verificationToken: token,
-          emailVerified: false
-        });
-        if (!user) {
-          return res.render('verify-email', {
-            error: 'Invalid or expired verification token',
-            success: false,
-            devtoolsDetectionScript,
-            antiAdblockScript
-          });
-        }
-        const tokenAge = Date.now() - new Date(user.createdAt).getTime();
-        const maxAge = 24 * 60 * 60 * 1000;
-        if (tokenAge > maxAge) {
-          await User.deleteOne({ _id: user._id });
-          return res.render('verify-email', {
-            error: 'Verification token has expired. Please sign up again.',
-            success: false,
-            devtoolsDetectionScript,
-            antiAdblockScript
-          });
-        }
-        await User.findByIdAndUpdate(user._id, {
-          emailVerified: true,
-          verificationToken: undefined
-        });
-        res.render('verify-email', {
-          success: true,
-          error: null,
-          message: 'Email verified successfully!',
-          devtoolsDetectionScript,
-          antiAdblockScript
-        });
-      } catch (err) {
-        console.error('Email verification error:', err);
-        res.render('verify-email', {
-          error: 'An error occurred during verification',
-          success: false,
-          devtoolsDetectionScript,
-          antiAdblockScript
-        });
-      }
-    });
+    // ❌ REMOVED: /verify-email route
 
     app.get('/login', (req, res) => {
       res.render('login', { 
@@ -559,6 +401,7 @@ mongoose.connect(process.env.MONGO_URI, {
       });
     });
 
+    // ✅ UPDATED: Login without email verification check
     app.post('/login', async (req, res) => {
       const { usernameOrEmail, password } = req.body;
       if (!usernameOrEmail || !password) {
@@ -586,13 +429,8 @@ mongoose.connect(process.env.MONGO_URI, {
         if (user.isBanned) {
           return res.status(403).send('🚫 You are banned.');
         }
-        if (!user.emailVerified) {
-          return res.render('login', {
-            error: 'Please verify your email address before logging in.',
-            devtoolsDetectionScript,
-            antiAdblockScript
-          });
-        }
+        // ✅ NO email verification check here
+
         req.session.userId = user._id;
         req.session.user = { username: user.username };
         res.redirect(user.discordId ? '/home' : '/link');
@@ -637,7 +475,7 @@ mongoose.connect(process.env.MONGO_URI, {
 
     app.get('/home', requireAuth, checkBan, async (req, res) => {
       const user = res.locals.user;
-      if (!user.discordId) return res.redirect('/link');
+      if (!user.discordId) return res.redirect('/link'); // ✅ Enforce Discord link
       const totalUsers = await User.countDocuments();
       res.render('home', { 
         user, 
@@ -654,11 +492,11 @@ mongoose.connect(process.env.MONGO_URI, {
       });
     });
 
-    // --- ✅ FIXED: DYNAMIC EJS ROUTES — Passes ALL variables to prevent crashes ---
+    // ========== DYNAMIC EJS ROUTES ==========
     const viewsPath = path.join(__dirname, 'views');
     const existingRoutes = [
-      '/', '/signup', '/login', '/link', '/home',
-      '/verify-email', '/logout', '/verify-email-sent'
+      '/', '/signup', '/login', '/link', '/home', '/logout'
+      // ❌ Removed: '/verify-email', '/verify-email-sent'
     ];
 
     console.log('🔧 Scanning views directory for dynamic routes...');
@@ -676,38 +514,25 @@ mongoose.connect(process.env.MONGO_URI, {
 
           app.get(routeName, async (req, res) => {
             try {
-              // ✅ CRITICAL FIX: Pass ALL variables used in tos.ejs
               const renderData = {
-                // Dev tools
                 devtoolsDetectionScript,
                 antiAdblockScript,
-
-                // Branding
                 companyName: process.env.COMPANY_NAME || 'pulsehub',
                 websiteUrl: process.env.WEBSITE_URL || 'pulsehub.space',
                 lastUpdated: process.env.TOS_LAST_UPDATED || new Date().toISOString().slice(0, 10),
-
-                // Legal entity
                 companyEntity: process.env.COMPANY_ENTITY || 'PulseHub Inc',
-
-                // Contact emails
                 securityEmail: process.env.SECURITY_EMAIL || 'security@pulsehub.space',
                 legalEmail: process.env.LEGAL_EMAIL || 'legal@pulsehub.space',
                 supportEmail: process.env.SUPPORT_EMAIL || 'support@pulsehub.space',
-
-                // Financial & liability
                 currencySymbol: process.env.CURRENCY_SYMBOL || '£',
                 liabilityFloor: process.env.LIABILITY_FLOOR || '£100',
                 liabilityFloorBusiness: process.env.LIABILITY_FLOOR_BUSINESS || '£5,000',
                 indemnityCapBusiness: process.env.INDEMNITY_CAP_BUSINESS || '£25,000',
-
-                // Legal jurisdiction
                 governingLawRegion: process.env.GOVERNING_LAW_REGION || 'England and Wales',
                 arbitrationProvider: process.env.ARBITRATION_PROVIDER || 'LCIA',
                 consumerADR: process.env.CONSUMER_ADR || 'CMA approved ADR providers / CEDR'
               };
 
-              // Add user if logged in
               if (req.session && req.session.userId) {
                 try {
                   const user = await User.findById(req.session.userId);
@@ -719,7 +544,6 @@ mongoose.connect(process.env.MONGO_URI, {
                 }
               }
 
-              // Render the page
               res.render(file.slice(0, -4), renderData);
             } catch (err) {
               console.error(`❌ Failed to render ${file}:`, err);
@@ -733,7 +557,6 @@ mongoose.connect(process.env.MONGO_URI, {
     } catch (err) {
       console.error('❌ Failed to read views directory:', err);
     }
-    // --- ✅ END DYNAMIC EJS ROUTES ---
 
     // 404 Handler
     app.use((req, res) => {
